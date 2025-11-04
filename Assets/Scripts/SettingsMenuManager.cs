@@ -5,6 +5,7 @@ using UnityEngine.Audio;
 public class SettingsMenuManager : MonoBehaviour
 {
     public Slider volume_master, volume_music, volume_effects;
+    public Toggle toggle_fullscreen;
     public AudioMixer audioMixer;
 
     public void ChangeMasterVolume()
@@ -18,5 +19,9 @@ public class SettingsMenuManager : MonoBehaviour
     public void ChangeEffectsVolume()
     {
         audioMixer.SetFloat("volume_effects", volume_effects.value);
+    }
+    public void SetFullscreen(bool isFullscreen)
+    {
+        Screen.fullScreen = isFullscreen;
     }
 }

@@ -8,6 +8,7 @@ public class MainMenu : MonoBehaviour
     [Header("UI Panels")]
     public GameObject mainMenuPanel;
     public GameObject settingsPanel;
+    public GameObject savesPanel;
 
     void Start()
 	{
@@ -24,6 +25,11 @@ public class MainMenu : MonoBehaviour
 		Application.Quit();
     }
 
+    public void ShowSaves()
+    {
+        mainMenuPanel.SetActive(false);
+        savesPanel.SetActive(true);
+    }
     public void ShowSettings()
     {
         mainMenuPanel.SetActive(false);
@@ -33,6 +39,7 @@ public class MainMenu : MonoBehaviour
     public void ShowMainMenu()
     {
         settingsPanel.SetActive(false);
+        savesPanel.SetActive(false);
         mainMenuPanel.SetActive(true);
     }
 }
