@@ -2,44 +2,110 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using System.IO;
 
 public class MainMenu : MonoBehaviour
 {
     [Header("UI Panels")]
     public GameObject mainMenuPanel;
     public GameObject settingsPanel;
-    public GameObject savesPanel;
+
+    [Header("Save-related Buttons")]
+    public Button continueButton;
+    public Button savesButton;
+
+    [Header("Save Settings")]
+    public string saveFolderName = "saves";
+    private string saveFolderPath;
 
     void Start()
-	{
-		ShowMainMenu();
-    }
-    public void PlayGame()
-	{
-		SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
-    }
-
-
-	public void QuitGame()
-	{
-		Application.Quit();
-    }
-
-    public void ShowSaves()
     {
-        mainMenuPanel.SetActive(false);
-        savesPanel.SetActive(true);
+        // Ensure only main menu is visible at startup
+        ShowMainMenu();
+
+        // Initialize save system and check for saves
+        InitializeSaveSystem();
+        CheckForSaveFiles();
     }
+
+    void InitializeSaveSystem()
+    {
+        // This will work in both Editor and built game
+        saveFolderPath = Path.Combine(Application.persistentDataPath, saveFolderName);
+    }
+
+    void CheckForSaveFiles()
+    {
+        bool saveFilesExist = DoSaveFilesExist();
+
+        // Enable/disable buttons based on save file existence
+        if (continueButton != null)
+        {
+            continueButton.interactable = saveFilesExist;
+            // Optional: Change color to grey when disabled
+            SetButtonVisualState(continueButton, saveFilesExist);
+        }
+
+        if (savesButton != null)
+        {
+            savesButton.interactable = saveFilesExist;
+            SetButtonVisualState(savesButton, saveFilesExist);
+        }
+
+        Debug.Log($"Save files exist: {saveFilesExist}");
+    }
+
+    bool DoSaveFilesExist()
+    {
+        // Check if save directory exists and has files
+        if (!Directory.Exists(saveFolderPath))
+            return false;
+
+        // Get all files in the save directory (you can modify this filter later)
+        string[] saveFiles = Directory.GetFiles(saveFolderPath, "*.save");
+        return saveFiles.Length > 0;
+    }
+
+    void SetButtonVisualState(Button button, bool isActive)
+    {
+        if (!isActive)
+        {
+            // Make button appear greyed out
+            var colors = button.colors;
+            colors.normalColor = Color.gray;
+            colors.disabledColor = Color.gray;
+            button.colors = colors;
+        }
+        else
+        {
+            // Reset to normal colors (optional)
+            var colors = button.colors;
+            colors.normalColor = Color.white;
+            button.colors = colors;
+        }
+    }
+
+    // Your existing methods remain the same
+    public void PlayGame()
+    {
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+    }
+
+    public void QuitGame()
+    {
+        Application.Quit();
+    }
+
     public void ShowSettings()
     {
-        mainMenuPanel.SetActive(false);
-        settingsPanel.SetActive(true);
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
+        if (settingsPanel != null) settingsPanel.SetActive(true);
     }
 
     public void ShowMainMenu()
     {
-        settingsPanel.SetActive(false);
-        savesPanel.SetActive(false);
-        mainMenuPanel.SetActive(true);
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
     }
 }

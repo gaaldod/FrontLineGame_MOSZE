@@ -2463,7 +2463,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mainMenuPanel: {fileID: 907125324}
   settingsPanel: {fileID: 29207158}
-  savesPanel: {fileID: 0}
+  continueButton: {fileID: 699352905}
+  savesButton: {fileID: 945578733}
+  saveFolderName: saves
 --- !u!224 &907125326
 RectTransform:
   m_ObjectHideFlags: 0
