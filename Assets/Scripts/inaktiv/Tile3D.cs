@@ -74,7 +74,7 @@ public class Tile3D : MonoBehaviour
         {
             // Move the unit's GameObject onto tile center
             unit.transform.position = this.transform.position;
-            unit.currentTile = this;
+         //   unit.currentTile = this;
         }
     }
 
@@ -85,7 +85,7 @@ public class Tile3D : MonoBehaviour
     {
         if (occupant != null)
         {
-            occupant.currentTile = null;
+         //   occupant.currentTile = null;
             occupant = null;
         }
     }
