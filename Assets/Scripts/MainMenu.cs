@@ -5,6 +5,7 @@ using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using System.IO;
 
+
 public class MainMenu : MonoBehaviour
 {
     [Header("UI Panels")]
@@ -100,11 +101,13 @@ public class MainMenu : MonoBehaviour
     // Your existing methods remain the same
     public void PlayGame()
     {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+        SceneManager.LoadScene("GameScene");
+        //SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
     }
 
     public void QuitGame()
     {
+        Debug.Log("Kilépés a játékból...");
         Application.Quit();
     }
 

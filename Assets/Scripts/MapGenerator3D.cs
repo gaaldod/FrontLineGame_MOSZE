@@ -2,8 +2,11 @@
 
 public class HexMap3D : MonoBehaviour
 {
+    [Header("Prefabs")]
     public GameObject groundHexPrefab;
     public GameObject castleHexPrefab;
+
+    [Header("Map Settings")]
     public int width = 8;
     public int height = 8;
     public float hexSize = 1f;
@@ -15,12 +18,12 @@ public class HexMap3D : MonoBehaviour
 
     void GenerateMap()
     {
-
         float xOffset = hexSize * 0.5f;
-        float zOffset = hexSize * 1.73f; // sqrt(3)/2
+        float zOffset = hexSize * 1.73f; // kb. sqrt(3)
 
         height = height / 2;
         width = width * 2;
+
         for (int x = 0; x < width; x++)
         {
             for (int z = 0; z < height; z++)
@@ -29,19 +32,31 @@ public class HexMap3D : MonoBehaviour
                 float zPos = z * zOffset + (x % 2 == 1 ? zOffset / 2f : 0f);
                 Vector3 position = new Vector3(xPos, 0, zPos);
 
-                // Középre tesszük a kastélyt
+                GameObject tile;
+
+                // 🏰 Kastély a jobb felső sarokba
                 if (x == width - 1 && z == height - 1)
                 {
-                    Instantiate(castleHexPrefab, position, Quaternion.identity, transform);
+                    tile = Instantiate(castleHexPrefab, position, Quaternion.identity, transform);
+                    tile.tag = "Castle"; // fontos a GameManager miatt
                 }
                 else
                 {
-                    Instantiate(groundHexPrefab, position, Quaternion.identity, transform);
+                    tile = Instantiate(groundHexPrefab, position, Quaternion.identity, transform);
                 }
+
+                // ⚙️ Layer beállítása
+                if (x < width / 2)
+                    tile.layer = LayerMask.NameToLayer("LeftZone");
+                else
+                    tile.layer = LayerMask.NameToLayer("RightZone");
+
+                // 🧩 HexTile komponens biztosítása
+                if (tile.GetComponent<HexTile>() == null)
+                    tile.AddComponent<HexTile>();
             }
         }
+
+        Debug.Log($"✅ Hex map generálva: {width} x {height}");
     }
 }
-
-//float xOffset = hexSize * 0.5f;
-//float zOffset = hexSize * 1.73f; // sqrt(3)/2
