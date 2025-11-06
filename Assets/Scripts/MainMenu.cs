@@ -82,6 +82,7 @@ public class MainMenu : MonoBehaviour
             // Reset to normal colors (optional)
             var colors = button.colors;
             colors.normalColor = Color.white;
+            colors.disabledColor = ColorBlock.defaultColorBlock.disabledColor;
             button.colors = colors;
         }
     }
