@@ -1,29 +1,41 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance;
     private void Awake() => Instance = this;
 
-    [Header("Unit Settings")]
+    [Header("Prefabs & UI")]
     public GameObject unitPrefab;
-
-    [Header("UI Elements")]
     public Button buyLeftButton;
     public Button buyRightButton;
+    public TMP_Text leftGoldText;
+    public TMP_Text rightGoldText;
 
+    [Header("Economy Settings")]
+    public int startingGold = 15;
+    public int unitCost = 5;
+
+    [Header("Player Colors")]
+    public Color leftPlayerColor = Color.cyan;
+    public Color rightPlayerColor = Color.red;
+
+    private int[] gold = new int[2]; // [0] = bal, [1] = jobb
     private bool isPlacingUnit = false;
     private GameObject ghostUnit;
     private int activePlayer = 0;
 
-    public int ActivePlayer => activePlayer; // hozzáférés a HexTile-nek
-
-    public Color leftPlayerColor = Color.cyan;
-    public Color rightPlayerColor = Color.red;
+    public int ActivePlayer => activePlayer;
 
     void Start()
     {
+        // Kezdő arany
+        gold[0] = startingGold;
+        gold[1] = startingGold;
+        UpdateGoldUI();
+
         buyLeftButton.onClick.AddListener(() => StartPlacingUnit(0));
         buyRightButton.onClick.AddListener(() => StartPlacingUnit(1));
     }
@@ -37,64 +49,65 @@ public class GameManager : MonoBehaviour
     void StartPlacingUnit(int player)
     {
         if (isPlacingUnit) return;
+        if (gold[player] < unitCost)
+        {
+            Debug.Log($"Játékos {player + 1} nem engedheti meg magának a unitot!");
+            return;
+        }
 
         isPlacingUnit = true;
         activePlayer = player;
-
         ghostUnit = Instantiate(unitPrefab);
         SetTransparency(ghostUnit, 0.5f);
-
-        // Ghost külön layerre
-        ghostUnit.layer = LayerMask.NameToLayer("Ghost");
-        foreach (Transform child in ghostUnit.transform)
-            child.gameObject.layer = LayerMask.NameToLayer("Ghost");
     }
 
     void FollowMouse()
     {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        int layerMask = LayerMask.GetMask("LeftZone", "RightZone");
-
-        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, layerMask))
+        if (Physics.Raycast(ray, out RaycastHit hit))
         {
+            // kicsit az egér mellé toljuk
             Vector3 offset = Camera.main.transform.right * 0.5f + Vector3.up * 0.1f;
-            Vector3 targetPos = hit.point + offset;
-            ghostUnit.transform.position = Vector3.Lerp(ghostUnit.transform.position, targetPos, Time.deltaTime * 20f);
+            ghostUnit.transform.position = hit.point + offset;
         }
     }
 
     public void TryPlaceUnit(HexTile tile)
     {
         if (!isPlacingUnit || tile.isOccupied) return;
+        if (tile.CompareTag("Castle")) return; // ne lehessen kastélyra rakni
 
-        // 🏰 Ne lehessen a castle-ra rakni
-        if (tile.CompareTag("Castle"))
-        {
-            Debug.Log("❌ A kastélyra nem lehet unitot rakni!");
-            return;
-        }
-
-        // Zónaellenőrzés
+        // Zóna ellenőrzés
         if (activePlayer == 0 && tile.gameObject.layer != LayerMask.NameToLayer("LeftZone"))
         {
-            Debug.Log("❌ A bal játékos csak a bal zónába helyezhet unitot!");
+            Debug.Log("A bal játékos csak a bal oldalon rakhat le unitot!");
             return;
         }
 
         if (activePlayer == 1 && tile.gameObject.layer != LayerMask.NameToLayer("RightZone"))
         {
-            Debug.Log("❌ A jobb játékos csak a jobb zónába helyezhet unitot!");
+            Debug.Log("A jobb játékos csak a jobb oldalon rakhat le unitot!");
             return;
         }
 
-        tile.isOccupied = true;
-        GameObject unit = Instantiate(unitPrefab, tile.transform.position + Vector3.up * 0.1f, Quaternion.identity);
+        // Gold levonás
+        gold[activePlayer] -= unitCost;
+        UpdateGoldUI();
 
+        tile.isOccupied = true;
+
+        Instantiate(unitPrefab, tile.transform.position + Vector3.up * 0.1f, Quaternion.identity);
         Destroy(ghostUnit);
         ghostUnit = null;
         isPlacingUnit = false;
 
-        Debug.Log($"✅ Játékos {activePlayer + 1} unitot helyezett le a Tile-ra!");
+        Debug.Log($"Játékos {activePlayer + 1} unitot helyezett le! ({gold[activePlayer]} gold maradt)");
+    }
+
+    void UpdateGoldUI()
+    {
+        leftGoldText.text = $"Arany: {gold[0]}";
+        rightGoldText.text = $"Arany: {gold[1]}";
     }
 
     void SetTransparency(GameObject obj, float alpha)
