@@ -7,7 +7,7 @@ public class Tile3D : MonoBehaviour
     public Vector2Int hexPosition;
 
     // Who occupies this tile (null if empty)
-    public Unit3D occupant;
+    public Unit occupant;
 
     // Cached neighbor list (filled by MapGenerator3D)
     public List<Tile3D> neighbors;
@@ -66,7 +66,7 @@ public class Tile3D : MonoBehaviour
     /// <summary>
     /// Sets the occupant of this tile and updates occupancy.
     /// </summary>
-    public void SetOccupant(Unit3D unit)
+    public void SetOccupant(Unit unit)
     {
         occupant = unit;
 
@@ -122,7 +122,7 @@ public class Tile3D : MonoBehaviour
 
         GameObject unitObj = Instantiate(testUnitPrefab, transform.position, Quaternion.identity);
 
-        Unit3D unit = unitObj.GetComponent<Unit3D>();
+        Unit unit = unitObj.GetComponent<Unit>();
         if (unit == null)
         {
             Debug.LogError("Unit prefab lacks Unit3D script!");
