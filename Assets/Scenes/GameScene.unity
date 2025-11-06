@@ -777,6 +777,10 @@ MonoBehaviour:
   unitPrefab: {fileID: 7374579278287907348, guid: f146cbcb9cd42c34cab46ffe9aa918e6, type: 3}
   buyLeftButton: {fileID: 36005920}
   buyRightButton: {fileID: 648848491}
+  leftGoldText: {fileID: 1944288031}
+  rightGoldText: {fileID: 1937919840}
+  startingGold: 15
+  unitCost: 5
   leftPlayerColor: {r: 0, g: 1, b: 1, a: 1}
   rightPlayerColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!4 &700084734
@@ -1382,7 +1386,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Gold: 100'
+  m_text: 'Gold: 0'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1518,7 +1522,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Gold: 100'
+  m_text: 'Gold: 0'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
