@@ -1,6 +1,6 @@
 ﻿using UnityEngine;
 
-public class Unit3D : MonoBehaviour
+public class Unit : MonoBehaviour
 {
     public Tile3D currentTile;
 
