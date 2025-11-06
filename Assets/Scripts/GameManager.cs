@@ -43,32 +43,89 @@ public class GameManager : MonoBehaviour
     void Update()
     {
         if (isPlacingUnit && ghostUnit != null)
+        {
             FollowMouse();
+
+            // SPACE: lehelyezés megszakítása
+            if (Input.GetKeyDown(KeyCode.Space))
+            {
+                CancelPlacingUnit();
+            }
+        }
+    }
+
+    void CancelPlacingUnit()
+    {
+        if (!isPlacingUnit) return;
+
+        Debug.Log("❌ Unit lerakás megszakítva.");
+
+        if (ghostUnit != null)
+        {
+            Destroy(ghostUnit);
+            ghostUnit = null;
+        }
+
+        isPlacingUnit = false;
     }
 
     void StartPlacingUnit(int player)
     {
         if (isPlacingUnit) return;
+
+        // 💰 Gold ellenőrzés
         if (gold[player] < unitCost)
         {
-            Debug.Log($"Játékos {player + 1} nem engedheti meg magának a unitot!");
+            Debug.Log($"❌ Játékos {player + 1} nem engedheti meg magának a unitot! ({gold[player]} / {unitCost})");
             return;
         }
 
         isPlacingUnit = true;
         activePlayer = player;
+
+        // 👻 Ghost létrehozása
         ghostUnit = Instantiate(unitPrefab);
         SetTransparency(ghostUnit, 0.5f);
+
+        // 🎯 Alap spawnpozíció
+        Vector3 startPos = activePlayer == 0
+            ? new Vector3(-2f, 0.15f, 0f)
+            : new Vector3(10f, 0.15f, 0f);
+
+        ghostUnit.transform.position = startPos;
+
+        Debug.Log($"🎯 Játékos {activePlayer + 1} elkezdett unitot elhelyezni ({gold[player]} gold maradt).");
     }
 
     void FollowMouse()
     {
         Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
-        if (Physics.Raycast(ray, out RaycastHit hit))
+        int layerMask = LayerMask.GetMask("LeftZone", "RightZone");
+
+        if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, layerMask))
         {
-            // kicsit az egér mellé toljuk
-            Vector3 offset = Camera.main.transform.right * 0.5f + Vector3.up * 0.1f;
-            ghostUnit.transform.position = hit.point + offset;
+            // 📍 A ghost mindig az egér MELLÉ kerül
+            Vector3 mouseOffset = Camera.main.transform.right * 1f + Vector3.up * 0.1f;
+            Vector3 targetPos = hit.point + mouseOffset;
+
+            ghostUnit.transform.position = Vector3.Lerp(
+                ghostUnit.transform.position,
+                targetPos,
+                Time.deltaTime * 20f
+            );
+        }
+        else
+        {
+            // Ha nincs találat, marad a sarokban
+            Vector3 idlePos = activePlayer == 0
+                ? new Vector3(1f, 0.15f, -1f)
+                : new Vector3(6f, 0.15f, -1f);
+
+            ghostUnit.transform.position = Vector3.Lerp(
+                ghostUnit.transform.position,
+                idlePos,
+                Time.deltaTime * 10f
+            );
         }
     }
 
