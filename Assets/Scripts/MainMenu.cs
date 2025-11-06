@@ -18,6 +18,9 @@ public class MainMenu : MonoBehaviour
     [Header("Save Settings")]
     public string saveFolderName = "saves";
     private string saveFolderPath;
+    
+    // Stores original button colors to restore when re-enabling
+    private readonly Dictionary<Button, ColorBlock> originalButtonColors = new Dictionary<Button, ColorBlock>();
 
     void Start()
     {
@@ -71,6 +74,12 @@ public class MainMenu : MonoBehaviour
     {
         if (!isActive)
         {
+            // Save original colors once so we can restore when re-enabling
+            if (!originalButtonColors.ContainsKey(button))
+            {
+                originalButtonColors[button] = button.colors;
+            }
+
             // Make button appear greyed out
             var colors = button.colors;
             colors.normalColor = Color.gray;
@@ -79,11 +88,12 @@ public class MainMenu : MonoBehaviour
         }
         else
         {
-            // Reset to normal colors (optional)
-            var colors = button.colors;
-            colors.normalColor = Color.white;
-            colors.disabledColor = ColorBlock.defaultColorBlock.disabledColor;
-            button.colors = colors;
+            // Restore original colors if we saved them previously
+            if (originalButtonColors.TryGetValue(button, out var originalColors))
+            {
+                button.colors = originalColors;
+            }
+            // If no original colors were saved, do not modify colors
         }
     }
 
