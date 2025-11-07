@@ -50,7 +50,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 919132149155446097, guid: ee22ae1308830a646a29718ec37ded8f, type: 3}
       propertyPath: m_Name
-      value: building-walls
+      value: world-building-walls
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -61,7 +61,7 @@ PrefabInstance:
       addedObject: {fileID: 4446124711084997104}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: ee22ae1308830a646a29718ec37ded8f, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 512709693625300260}
+      addedObject: {fileID: -3040714061236886090}
   m_SourcePrefab: {fileID: 100100000, guid: ee22ae1308830a646a29718ec37ded8f, type: 3}
 --- !u!1 &6217492206938165024 stripped
 GameObject:
@@ -90,7 +90,7 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 6624015232822972677, guid: ee22ae1308830a646a29718ec37ded8f, type: 3}
---- !u!114 &512709693625300260
+--- !u!114 &-3040714061236886090
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -99,7 +99,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 6217492206938165024}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6c115f8f27bf0004eb7a07bc1916f0ff, type: 3}
+  m_Script: {fileID: 11500000, guid: 6e80528e38112d1438f18fceb5d76bd5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  highlightColor: {r: 0, g: 1, b: 1, a: 1}
+  isOccupied: 0

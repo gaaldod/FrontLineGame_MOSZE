@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -19,10 +20,10 @@ public class GameManager : MonoBehaviour
     public int unitCost = 5;
 
     [Header("Player Colors")]
-    public Color leftPlayerColor = Color.cyan;
-    public Color rightPlayerColor = Color.red;
+    public Color leftPlayerColor = Color.red;
+    public Color rightPlayerColor = Color.cyan;
 
-    private int[] gold = new int[2]; // [0] = bal, [1] = jobb
+    private int[] gold = new int[2];
     private bool isPlacingUnit = false;
     private GameObject ghostUnit;
     private int activePlayer = 0;
@@ -31,13 +32,24 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        // Kezdő arany
-        gold[0] = startingGold;
-        gold[1] = startingGold;
+        // arany átvétele a WorldManagerből
+        if (WorldManager.Instance != null)
+        {
+            gold = (int[])WorldManager.Instance.GetGold().Clone();
+            Debug.Log($"💰 Átvett arany: Bal={gold[0]}, Jobb={gold[1]}");
+        }
+        else
+        {
+            gold[0] = startingGold;
+            gold[1] = startingGold;
+        }
+
         UpdateGoldUI();
 
-        buyLeftButton.onClick.AddListener(() => StartPlacingUnit(0));
-        buyRightButton.onClick.AddListener(() => StartPlacingUnit(1));
+        if (buyLeftButton != null)
+            buyLeftButton.onClick.AddListener(() => StartPlacingUnit(0));
+        if (buyRightButton != null)
+            buyRightButton.onClick.AddListener(() => StartPlacingUnit(1));
     }
 
     void Update()
@@ -45,27 +57,34 @@ public class GameManager : MonoBehaviour
         if (isPlacingUnit && ghostUnit != null)
         {
             FollowMouse();
-
-            // SPACE: lehelyezés megszakítása
             if (Input.GetKeyDown(KeyCode.Space))
-            {
                 CancelPlacingUnit();
-            }
         }
+
+        if (Input.GetKeyDown(KeyCode.LeftArrow))
+            EndGame(0);
+        if (Input.GetKeyDown(KeyCode.RightArrow))
+            EndGame(1);
+    }
+
+    public void EndGame(int winner)
+    {
+        Debug.Log($"🎉 Játékos {winner + 1} NYERT!");
+        gold[winner] += 5;
+
+        if (WorldManager.Instance != null)
+        {
+            WorldManager.Instance.SetGold(gold);
+            WorldManager.Instance.RecordBattleResult(winner);
+        }
+
+        SceneManager.LoadScene("WorldMapScene");
     }
 
     void CancelPlacingUnit()
     {
         if (!isPlacingUnit) return;
-
-        Debug.Log("❌ Unit lerakás megszakítva.");
-
-        if (ghostUnit != null)
-        {
-            Destroy(ghostUnit);
-            ghostUnit = null;
-        }
-
+        if (ghostUnit != null) Destroy(ghostUnit);
         isPlacingUnit = false;
     }
 
@@ -73,28 +92,23 @@ public class GameManager : MonoBehaviour
     {
         if (isPlacingUnit) return;
 
-        // 💰 Gold ellenőrzés
         if (gold[player] < unitCost)
         {
-            Debug.Log($"❌ Játékos {player + 1} nem engedheti meg magának a unitot! ({gold[player]} / {unitCost})");
+            Debug.Log($"❌ Játékos {player + 1} nem engedheti meg magának a unitot!");
             return;
         }
 
         isPlacingUnit = true;
         activePlayer = player;
 
-        // 👻 Ghost létrehozása
         ghostUnit = Instantiate(unitPrefab);
         SetTransparency(ghostUnit, 0.5f);
 
-        // 🎯 Alap spawnpozíció
-        Vector3 startPos = activePlayer == 0
+        Vector3 startPos = (activePlayer == 0)
             ? new Vector3(-2f, 0.15f, 0f)
             : new Vector3(10f, 0.15f, 0f);
 
         ghostUnit.transform.position = startPos;
-
-        Debug.Log($"🎯 Játékos {activePlayer + 1} elkezdett unitot elhelyezni ({gold[player]} gold maradt).");
     }
 
     void FollowMouse()
@@ -104,7 +118,6 @@ public class GameManager : MonoBehaviour
 
         if (Physics.Raycast(ray, out RaycastHit hit, Mathf.Infinity, layerMask))
         {
-            // 📍 A ghost mindig az egér MELLÉ kerül
             Vector3 mouseOffset = Camera.main.transform.right * 1f + Vector3.up * 0.1f;
             Vector3 targetPos = hit.point + mouseOffset;
 
@@ -114,27 +127,13 @@ public class GameManager : MonoBehaviour
                 Time.deltaTime * 20f
             );
         }
-        else
-        {
-            // Ha nincs találat, marad a sarokban
-            Vector3 idlePos = activePlayer == 0
-                ? new Vector3(1f, 0.15f, -1f)
-                : new Vector3(6f, 0.15f, -1f);
-
-            ghostUnit.transform.position = Vector3.Lerp(
-                ghostUnit.transform.position,
-                idlePos,
-                Time.deltaTime * 10f
-            );
-        }
     }
 
     public void TryPlaceUnit(HexTile tile)
     {
         if (!isPlacingUnit || tile.isOccupied) return;
-        if (tile.CompareTag("Castle")) return; // ne lehessen kastélyra rakni
+        if (tile.CompareTag("Castle")) return;
 
-        // Zóna ellenőrzés
         if (activePlayer == 0 && tile.gameObject.layer != LayerMask.NameToLayer("LeftZone"))
         {
             Debug.Log("A bal játékos csak a bal oldalon rakhat le unitot!");
@@ -147,24 +146,25 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // Gold levonás
         gold[activePlayer] -= unitCost;
         UpdateGoldUI();
 
         tile.isOccupied = true;
-
         Instantiate(unitPrefab, tile.transform.position + Vector3.up * 0.1f, Quaternion.identity);
-        Destroy(ghostUnit);
-        ghostUnit = null;
-        isPlacingUnit = false;
 
-        Debug.Log($"Játékos {activePlayer + 1} unitot helyezett le! ({gold[activePlayer]} gold maradt)");
+        Destroy(ghostUnit);
+        isPlacingUnit = false;
+        ghostUnit = null;
+
+        Debug.Log($"🪖 Játékos {activePlayer + 1} unitot helyezett le!");
     }
 
     void UpdateGoldUI()
     {
-        leftGoldText.text = $"Arany: {gold[0]}";
-        rightGoldText.text = $"Arany: {gold[1]}";
+        if (leftGoldText != null)
+            leftGoldText.text = $"Arany: {gold[0]}";
+        if (rightGoldText != null)
+            rightGoldText.text = $"Arany: {gold[1]}";
     }
 
     void SetTransparency(GameObject obj, float alpha)

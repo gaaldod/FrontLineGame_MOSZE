@@ -101,7 +101,7 @@ public class MainMenu : MonoBehaviour
     // Your existing methods remain the same
     public void PlayGame()
     {
-        SceneManager.LoadScene("GameScene");
+        SceneManager.LoadScene("WorldMapScene");
         //SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
     }
 
