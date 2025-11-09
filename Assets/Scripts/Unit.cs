@@ -1,11 +1,22 @@
-﻿using UnityEngine;
+using UnityEngine;
 
 public class Unit : MonoBehaviour
 {
-    public Tile3D currentTile;
+    public float moveSpeed = 3f;
+    public Vector3 targetPosition;
 
-    // Later we'll add:
-    // - movement range
-    // - attack logic
-    // - stats
+    void Start()
+    {
+        targetPosition = transform.position;
+    }
+
+    void Update()
+    {
+        transform.position = Vector3.MoveTowards(transform.position, targetPosition, moveSpeed * Time.deltaTime);
+    }
+
+    public void MoveTo(Vector3 position)
+    {
+        targetPosition = position;
+    }
 }
