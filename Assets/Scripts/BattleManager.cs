@@ -187,7 +187,7 @@ public class BattleManager : MonoBehaviour
     }
 
     /// <summary>
-    /// Gets all 6 neighboring hex coordinates (odd-r offset system)
+    /// Gets all neighboring hex coordinates (odd-r offset system)
     /// Based on actual hex grid structure:
     /// - Even columns align vertically, odd columns are offset by zOffset/2
     /// - Forward movement is column n±2 (skipping one column)
@@ -228,8 +228,6 @@ public class BattleManager : MonoBehaviour
                 // Side neighbors: (x+1, z) and (x-1, z)
                 if (x + 1 < mapWidth) neighbors.Add(new Vector2Int(x + 1, z));
                 if (x - 1 >= 0) neighbors.Add(new Vector2Int(x - 1, z));
-                
-                // NO upward diagonals - only odd bottom row tiles connect to top row
             }
             else
             {
@@ -249,7 +247,6 @@ public class BattleManager : MonoBehaviour
         }
         else // Odd column
         {
-            // Special case: Odd-numbered bottom row tiles (x odd, z=0)
             // Pattern: Use top row neighbors (z+1) with x±1, plus forward and side neighbors
             if (z == 0)
             {
@@ -348,7 +345,7 @@ public class BattleManager : MonoBehaviour
                     continue;
 
                 // Check if tile is occupied by checking actual world positions of units
-                bool occupiedByFriendly = false;
+                bool occupiedByUnit = false;
                 
                 foreach (Unit unit in allUnits)
                 {
@@ -360,18 +357,17 @@ public class BattleManager : MonoBehaviour
                     
                     if (unitActualHex == neighbor)
                     {
-                        if (unitOwners[unit] == owner)
+                        if (unitOwners[unit] != null)
                         {
-                            occupiedByFriendly = true;
+                            occupiedByUnit = true;
                             break; // Can't move here if friendly unit is there
                         }
-                        // Enemy units allow movement (for combat), so we don't block those
                     }
                 }
 
-                // Can move to empty tiles or tiles with enemies (for combat)
-                // Cannot move to tiles with friendly units
-                if (!occupiedByFriendly)
+                // Can move to empty tiles (for combat)
+                // Cannot move to tiles with units
+                if (!occupiedByUnit)
                 {
                     validTiles.Add(tile);
                 }
@@ -588,21 +584,21 @@ public class BattleManager : MonoBehaviour
         {
             Vector2Int tileHex = WorldToHexCoord(tile.transform.position);
             
-            // Double-check: Skip if occupied by friendly unit (check actual positions)
-            bool occupiedByFriendly = false;
+            // Double-check: Skip if occupied by another unit (check actual positions)
+            bool occupiedByUnit = false;
             foreach (Unit unit in allUnits)
             {
                 if (unit == null || !unit.IsAlive())
                     continue;
                 
                 Vector2Int unitActualHex = WorldToHexCoord(unit.transform.position);
-                if (unitActualHex == tileHex && unitOwners[unit] == owner)
+                if (unitActualHex == tileHex && unitOwners[unit] != null)
                 {
-                    occupiedByFriendly = true;
+                    occupiedByUnit = true;
                     break;
                 }
             }
-            if (occupiedByFriendly) continue;
+            if (occupiedByUnit) continue;
 
             // Calculate distance to target
             float dist = HexDistance(tileHex, to);
