@@ -698,6 +698,7 @@ GameObject:
   - component: {fileID: 173216260}
   - component: {fileID: 173216259}
   - component: {fileID: 173216258}
+  - component: {fileID: 173216263}
   m_Layer: 5
   m_Name: introScene
   m_TagString: Untagged
@@ -720,14 +721,14 @@ PlayableDirector:
   m_DirectorUpdateMode: 1
   m_InitialTime: 0
   m_SceneBindings:
-  - key: {fileID: -5895728043335952838, guid: 98a35bd19ca15d649b5c2c7948e8bf31, type: 2}
-    value: {fileID: 1670867152}
-  - key: {fileID: -1839201688470957432, guid: 98a35bd19ca15d649b5c2c7948e8bf31, type: 2}
-    value: {fileID: 1908846579}
-  - key: {fileID: -9156572727684243344, guid: 98a35bd19ca15d649b5c2c7948e8bf31, type: 2}
-    value: {fileID: 1923043696}
-  - key: {fileID: -5189026063883681684, guid: 98a35bd19ca15d649b5c2c7948e8bf31, type: 2}
-    value: {fileID: 2073961074}
+  - key: {fileID: 8952280037196210140, guid: 98a35bd19ca15d649b5c2c7948e8bf31, type: 2}
+    value: {fileID: 1670867153}
+  - key: {fileID: 8672257852683258457, guid: 98a35bd19ca15d649b5c2c7948e8bf31, type: 2}
+    value: {fileID: 1908846583}
+  - key: {fileID: -1283396068599556390, guid: 98a35bd19ca15d649b5c2c7948e8bf31, type: 2}
+    value: {fileID: 1923043700}
+  - key: {fileID: 8522879860393720973, guid: 98a35bd19ca15d649b5c2c7948e8bf31, type: 2}
+    value: {fileID: 2073961078}
   m_ExposedReferences:
     m_References: []
 --- !u!114 &173216259
@@ -817,6 +818,28 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0, y: 0}
+--- !u!95 &173216263
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 173216257}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 0c7f1937e736c4844b3a7fdbce30575d, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &208600357
 GameObject:
   m_ObjectHideFlags: 0
@@ -2613,6 +2636,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   mainMenuPanel: {fileID: 907125324}
   settingsPanel: {fileID: 29207158}
+  introScenePanel: {fileID: 0}
   continueButton: {fileID: 699352905}
   savesButton: {fileID: 945578733}
   saveFolderName: saves
@@ -4033,6 +4057,7 @@ GameObject:
   - component: {fileID: 1670867155}
   - component: {fileID: 1670867154}
   - component: {fileID: 1670867153}
+  - component: {fileID: 1670867157}
   m_Layer: 5
   m_Name: firstPart
   m_TagString: Untagged
@@ -4050,7 +4075,7 @@ Animator:
   m_GameObject: {fileID: 1670867152}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 599e458709a717947ae72f0ff02ce4c9, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -4183,6 +4208,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: -72.881}
   m_SizeDelta: {x: -123.251, y: -145.762}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!225 &1670867157
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1670867152}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &1687797780
 GameObject:
   m_ObjectHideFlags: 0
@@ -4649,6 +4686,8 @@ GameObject:
   - component: {fileID: 1908846582}
   - component: {fileID: 1908846581}
   - component: {fileID: 1908846580}
+  - component: {fileID: 1908846583}
+  - component: {fileID: 1908846584}
   m_Layer: 5
   m_Name: secondPart
   m_TagString: Untagged
@@ -4676,10 +4715,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "A Fels\u0151v\xE1rosban a Highborn Dominion \u0151rzi a hitet, a rendet
-    \xE9s a hagyom\xE1nyt.\r\nAz Als\xF3negyed romjai k\xF6z\xF6tt a Forsaken Legion
-    \xE9p\xEDti \xFAjra a vil\xE1got a hamub\xF3l.\r\nEgyik\xFCk sem ismer kegyelmet
-    \u2013 csak gy\u0151zelmet.\r\n"
+  m_text: "Mindk\xE9t oldal a Korona darabjait keresi, mert aki egyes\xEDti, az\xE9
+    lesz a tr\xF3n.\nA dobok d\xFCb\xF6r\xF6gnek, a z\xE1szl\xF3k lobognak, \xE9s
+    a csatat\xE9r l\xE1ngba borul.\nM\xE1gia \xE9s ac\xE9l d\xF6nt majd arr\xF3l,
+    ki marad talpon, mikor el\xFCl a por.\n"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
@@ -4774,9 +4813,43 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -46.6}
+  m_AnchoredPosition: {x: 0, y: -46.600006}
   m_SizeDelta: {x: -123.251, y: -145.762}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!95 &1908846583
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1908846579}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 0}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!225 &1908846584
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1908846579}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &1923043696
 GameObject:
   m_ObjectHideFlags: 0
@@ -4788,6 +4861,8 @@ GameObject:
   - component: {fileID: 1923043699}
   - component: {fileID: 1923043698}
   - component: {fileID: 1923043697}
+  - component: {fileID: 1923043701}
+  - component: {fileID: 1923043700}
   m_Layer: 5
   m_Name: thirdPart
   m_TagString: Untagged
@@ -4815,10 +4890,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Mindk\xE9t oldal a Korona darabjait keresi, mert aki egyes\xEDti, az\xE9
-    lesz a tr\xF3n.\r\nA dobok d\xFCb\xF6r\xF6gnek, a z\xE1szl\xF3k lobognak, \xE9s
-    a csatat\xE9r l\xE1ngba borul.\r\nM\xE1gia \xE9s ac\xE9l d\xF6nt majd arr\xF3l,
-    ki marad talpon, mikor el\xFCl a por.\r\n"
+  m_text: "Most te l\xE9psz a porondra \u2013 hadvez\xE9rk\xE9nt, aki eld\xF6nti
+    a h\xE1bor\xFA v\xE9g\xE9t.\r\nV\xE1lassz oldalt. Gy\u0171jts sereget. Vezesd
+    \u0151ket gy\u0151zelemre.\r\nMert amikor az utols\xF3 kard is eln\xE9mul, csak
+    egy t\xF6rt\xE9net marad: a gy\u0151ztes\xE9.\r\n"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
@@ -4913,9 +4988,43 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -0.000015258789, y: -61.199997}
+  m_AnchoredPosition: {x: -0.000015258789, y: -46.600006}
   m_SizeDelta: {x: -123.251, y: -145.762}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!95 &1923043700
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1923043696}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 0}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!225 &1923043701
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1923043696}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &1925134529
 GameObject:
   m_ObjectHideFlags: 0
@@ -5531,6 +5640,8 @@ GameObject:
   - component: {fileID: 2073961077}
   - component: {fileID: 2073961076}
   - component: {fileID: 2073961075}
+  - component: {fileID: 2073961079}
+  - component: {fileID: 2073961078}
   m_Layer: 5
   m_Name: fourthPart
   m_TagString: Untagged
@@ -5558,10 +5669,10 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "Most te l\xE9psz a porondra \u2013 hadvez\xE9rk\xE9nt, aki eld\xF6nti
-    a h\xE1bor\xFA v\xE9g\xE9t.\r\nV\xE1lassz oldalt. Gy\u0171jts sereget. Vezesd
-    \u0151ket gy\u0151zelemre.\r\nMert amikor az utols\xF3 kard is eln\xE9mul, csak
-    egy t\xF6rt\xE9net marad: a gy\u0151ztes\xE9.\r\n"
+  m_text: "A Fels\u0151v\xE1rosban a Highborn Dominion \u0151rzi a hitet, a rendet
+    \xE9s a hagyom\xE1nyt.\nAz Als\xF3negyed romjai k\xF6z\xF6tt a Forsaken Legion
+    \xE9p\xEDti \xFAjra a vil\xE1got a hamub\xF3l.\nEgyik\xFCk sem ismer kegyelmet
+    \u2013 csak gy\u0151zelmet.\n"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 2e498d1c8094910479dc3e1b768306a4, type: 2}
@@ -5656,9 +5767,43 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 0, y: -46.6}
+  m_AnchoredPosition: {x: 0, y: -46.600006}
   m_SizeDelta: {x: -123.251, y: -145.762}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!95 &2073961078
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2073961074}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 0}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!225 &2073961079
+CanvasGroup:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2073961074}
+  m_Enabled: 1
+  m_Alpha: 1
+  m_Interactable: 1
+  m_BlocksRaycasts: 1
+  m_IgnoreParentGroups: 0
 --- !u!1 &2102716265
 GameObject:
   m_ObjectHideFlags: 0
