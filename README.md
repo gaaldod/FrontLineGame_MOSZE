@@ -1,5 +1,5 @@
 
-![Projekt Banner](FRONTLINE.png)
+![Projekt Banner](Assets/FRONTLINE.png)
 # FRONTLINE 
 ## Áttekintés
 A **Frontline** egy kétjátékos, körökre osztott stratégiai autobattler. A támadó célja a védő kastélyának elfoglalása, míg a védő feladata hét sikeres védelem végrehajtása. A pálya hexagon csempékből áll, a csata automatikusan zajlik.
@@ -78,30 +78,29 @@ Mentett adatok:
 ## 5. Assetek elérése (Unity – kötelező dokumentáció)
 
 ### Pálya / Labirintus
+Assets/Hexagons
+Assets/Prefabs
+Assets/Scenes
+
 A pálya **generált**
 Generálás logikája:  
 `Assets/Scripts/Map/MapGenerator.cs`
 
 
 ### Grafika / UI
-Asset.MainMenu
-Assets/UI/
-
+Assets/Hexagons
 
 ---
 
 ## 6. Projektstruktúra
 
-Assets/
-├── Scripts/
-│ ├── Game/
-│ ├── Map/
-│ └── Save/
-├── GameData/
-├── Art/
-├── UI/
-├── Audio/
-└── Docs/
+- **📁Assets/**
+  - **Hexagons/** – map generálás, main menu, UI
+  - **Prefabs/** – teljes map, map generálás, karakter elhelyezés, unit, building, castle, grass 
+  - **Scenes/** – teljes map, MenuScene, main menu UI
+  - **Scripts/** – különböző opcionálisan hibás elemek tesztelése, unit movement
+  - **Settings/** - settings, volume sliders, PC/Mobile Renders
+  - **Tests/** - edit mode, play mode
 
 ---
 
