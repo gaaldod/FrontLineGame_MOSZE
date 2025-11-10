@@ -20,7 +20,6 @@ public class HexGridDebugVisualizer : MonoBehaviour
     private float zOffset;
     private int mapWidth;
     private int mapHeight;
-    private bool mapInitialized = false;
 
     void Start()
     {
@@ -67,7 +66,6 @@ public class HexGridDebugVisualizer : MonoBehaviour
         
         if (hexTileMap.Count > 0)
         {
-            mapInitialized = true;
             if (useLineRenderers)
             {
                 CreateLineRenderers();

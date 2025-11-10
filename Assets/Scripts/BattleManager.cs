@@ -348,7 +348,6 @@ public class BattleManager : MonoBehaviour
                     continue;
 
                 // Check if tile is occupied by checking actual world positions of units
-                bool occupiedByEnemy = false;
                 bool occupiedByFriendly = false;
                 
                 foreach (Unit unit in allUnits)
@@ -366,11 +365,7 @@ public class BattleManager : MonoBehaviour
                             occupiedByFriendly = true;
                             break; // Can't move here if friendly unit is there
                         }
-                        else
-                        {
-                            occupiedByEnemy = true;
-                            // Don't break - check all units, but enemy units allow movement (for combat)
-                        }
+                        // Enemy units allow movement (for combat), so we don't block those
                     }
                 }
 
