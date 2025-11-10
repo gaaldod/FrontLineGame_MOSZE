@@ -47,23 +47,49 @@ public class GameManager : MonoBehaviour
 
         UpdateGoldUI();
 
+        Debug.Log($"Setting up buttons - buyLeftButton: {buyLeftButton != null}, buyRightButton: {buyRightButton != null}, startBattleButton: {startBattleButton != null}");
+
         if (buyLeftButton != null)
             buyLeftButton.onClick.AddListener(() => StartPlacingUnit(0));
         if (buyRightButton != null)
             buyRightButton.onClick.AddListener(() => StartPlacingUnit(1));
+        
+        // Try to find button if not assigned
+        if (startBattleButton == null)
+        {
+            Debug.LogWarning("startBattleButton not assigned, trying to find it by name...");
+            GameObject buttonObj = GameObject.Find("StartBattleButton");
+            if (buttonObj != null)
+            {
+                startBattleButton = buttonObj.GetComponent<Button>();
+                if (startBattleButton != null)
+                {
+                    Debug.Log("Found StartBattleButton and assigned it!");
+                }
+            }
+        }
+        
         if (startBattleButton != null)
+        {
+            Debug.Log("Wiring up startBattleButton onClick listener");
             startBattleButton.onClick.AddListener(StartBattle);
+            
+            // Verify button is interactable
+            if (!startBattleButton.interactable)
+            {
+                Debug.LogWarning("startBattleButton is not interactable! Enabling it...");
+                startBattleButton.interactable = true;
+            }
+        }
+        else
+        {
+            Debug.LogError("startBattleButton is NULL! Please assign it in the Inspector.");
+        }
     }
 
     public void StartBattle()
     {
-        Debug.Log("GameManager.StartBattle() called");
-        
-        if (startBattleButton == null)
-        {
-            Debug.LogError("Start Battle Button is not assigned in GameManager! Please assign it in the Inspector.");
-            return;
-        }
+        Debug.Log("GameManager.StartBattle() called - Button was clicked!");
         
         if (BattleManager.Instance != null)
         {

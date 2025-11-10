@@ -155,6 +155,12 @@ public class BattleManager : MonoBehaviour
 
     /// <summary>
     /// Gets all 6 neighboring hex coordinates (odd-r offset system)
+    /// Based on actual hex grid structure:
+    /// - Even columns align vertically, odd columns are offset by zOffset/2
+    /// - Forward movement is column n±2 (skipping one column)
+    /// - Side diagonals are column n±1
+    /// - Same column tiles are NOT neighbors (no vertical connections)
+    /// - Validates that neighbors exist and are correctly positioned
     /// </summary>
     List<Vector2Int> GetHexNeighbors(Vector2Int hexCoord)
     {
@@ -162,26 +168,65 @@ public class BattleManager : MonoBehaviour
         int x = hexCoord.x;
         int z = hexCoord.y;
 
-        if (x % 2 == 0) // Even row
+        if (x % 2 == 0) // Even column
         {
-            neighbors.Add(new Vector2Int(x + 1, z));
-            neighbors.Add(new Vector2Int(x + 1, z + 1));
-            neighbors.Add(new Vector2Int(x, z + 1));
-            neighbors.Add(new Vector2Int(x - 1, z));
-            neighbors.Add(new Vector2Int(x - 1, z + 1));
-            neighbors.Add(new Vector2Int(x, z - 1));
+            // Forward diagonals: column n±2 (these are the "forward" neighbors)
+            if (x + 2 < mapWidth) neighbors.Add(new Vector2Int(x + 2, z));     // Forward-right
+            if (x - 2 >= 0) neighbors.Add(new Vector2Int(x - 2, z));          // Forward-left
+            
+            // Side diagonals: column n±1, same row
+            if (x + 1 < mapWidth && z < mapHeight) neighbors.Add(new Vector2Int(x + 1, z));      // Right side
+            if (x - 1 >= 0 && z < mapHeight) neighbors.Add(new Vector2Int(x - 1, z));             // Left side
+            
+            // Additional diagonals: column n±1, row z+1 (upward diagonals) - only if z+1 is valid
+            if (x + 1 < mapWidth && z + 1 < mapHeight) neighbors.Add(new Vector2Int(x + 1, z + 1));  // Right-up diagonal
+            if (x - 1 >= 0 && z + 1 < mapHeight) neighbors.Add(new Vector2Int(x - 1, z + 1));       // Left-up diagonal
         }
-        else // Odd row
+        else // Odd column
         {
-            neighbors.Add(new Vector2Int(x + 1, z - 1));
-            neighbors.Add(new Vector2Int(x + 1, z));
-            neighbors.Add(new Vector2Int(x, z + 1));
-            neighbors.Add(new Vector2Int(x - 1, z - 1));
-            neighbors.Add(new Vector2Int(x - 1, z));
-            neighbors.Add(new Vector2Int(x, z - 1));
+            // Forward diagonals: column n±2 (these are the "forward" neighbors)
+            if (x + 2 < mapWidth) neighbors.Add(new Vector2Int(x + 2, z));     // Forward-right
+            if (x - 2 >= 0) neighbors.Add(new Vector2Int(x - 2, z));            // Forward-left
+            
+            // Side diagonals: column n±1, same row
+            if (x + 1 < mapWidth && z < mapHeight) neighbors.Add(new Vector2Int(x + 1, z));      // Right side
+            if (x - 1 >= 0 && z < mapHeight) neighbors.Add(new Vector2Int(x - 1, z));            // Left side
+            
+            // Additional diagonals: column n±1, row z-1 (downward diagonals) - only if z-1 is valid
+            if (x + 1 < mapWidth && z - 1 >= 0) neighbors.Add(new Vector2Int(x + 1, z - 1));   // Right-down diagonal
+            if (x - 1 >= 0 && z - 1 >= 0) neighbors.Add(new Vector2Int(x - 1, z - 1));          // Left-down diagonal
         }
 
-        return neighbors;
+        // Validate neighbors exist in hexTileMap and are actually neighbors (not wrapping around)
+        List<Vector2Int> validNeighbors = new List<Vector2Int>();
+        foreach (Vector2Int neighbor in neighbors)
+        {
+            // Check bounds
+            if (neighbor.x < 0 || neighbor.x >= mapWidth || neighbor.y < 0 || neighbor.y >= mapHeight)
+                continue;
+            
+            // Check if tile exists at this coordinate
+            if (!hexTileMap.ContainsKey(neighbor))
+                continue;
+            
+            // Additional validation: check that the neighbor is actually adjacent (not wrapping)
+            // Calculate expected world distance - should be approximately hexSize
+            Vector3 currentPos = HexCoordToWorld(hexCoord);
+            Vector3 neighborPos = HexCoordToWorld(neighbor);
+            float distance = Vector3.Distance(currentPos, neighborPos);
+            
+            // Neighbors should be close (within reasonable hex distance, accounting for offset)
+            // Max distance should be around 1.5 * hexSize for diagonal neighbors
+            if (distance > hexSize * 2f)
+            {
+                Debug.LogWarning($"Skipping invalid neighbor: {hexCoord} -> {neighbor}, distance: {distance}");
+                continue;
+            }
+            
+            validNeighbors.Add(neighbor);
+        }
+
+        return validNeighbors;
     }
 
     /// <summary>
