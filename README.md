@@ -51,10 +51,10 @@ A játék maximum **14 körig** tart. Egy kör:
 ### Egységek
 | Típus        | Költség | Támadás | Élet | Hatótáv |
 |--------------|---------|---------|------|---------|
-| Közelharcos  | 5       | változó | ...  | 1       |
+| Közelharcos  | 5       | változó | 5  | 1   |
 
 Egységstatisztikák:  
-`Assets/Prefabs/unit.prefab`
+`Assets/Scripts/Unit.cs`
 
 ### Aranyrendszer
 - Kör elején: **15 pont**  
@@ -77,15 +77,14 @@ Mentett adatok:
 
 ## 5. Assetek elérése (Unity – kötelező dokumentáció)
 
-### Pálya / Labirintus
+### Pálya
 `Assets/Hexagons`
 
 `Assets/Prefabs`
 
 `Assets/Scenes`
 
-A pálya **generált**
-Generálás logikája:  
+A pályagenerálás logikája:  
 `Assets/Scripts/Map/MapGenerator.cs`
 
 
@@ -97,10 +96,10 @@ Generálás logikája:
 ## 6. Projektstruktúra
 
 - **📁Assets/**
-  - **Hexagons/** – map generálás, main menu, UI
-  - **Prefabs/** – teljes map, map generálás, karakter elhelyezés, unit, building, castle, grass 
-  - **Scenes/** – teljes map, MenuScene, main menu UI
-  - **Scripts/** – különböző opcionálisan hibás elemek tesztelése, unit movement
+  - **Hexagons/** – textúrák
+  - **Prefabs/** – előre elkészített modellek
+  - **Scenes/** – jelenetek, GameScene, WorldMapScene, MainMenu
+  - **Scripts/** – az egész program "agya", tartalmazza mindenhez a scriptet
   - **Settings/** - settings, volume sliders, PC/Mobile Renders
   - **Tests/** - edit mode, play mode
 
