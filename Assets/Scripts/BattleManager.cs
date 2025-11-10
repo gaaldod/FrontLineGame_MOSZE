@@ -51,19 +51,35 @@ public class BattleManager : MonoBehaviour
         hexSize = mapGenerator.hexSize;
         xOffset = hexSize * 0.5f;
         zOffset = hexSize * 1.73f;
-        mapWidth = mapGenerator.width * 2;
-        mapHeight = mapGenerator.height / 2;
+        // MapGenerator modifies width and height in GenerateMap(), so we need to account for that
+        // After GenerateMap(): width = originalWidth * 2, height = originalHeight / 2
+        // So we need: mapWidth = currentWidth, mapHeight = currentHeight
+        mapWidth = mapGenerator.width;  // Already doubled in GenerateMap
+        mapHeight = mapGenerator.height; // Already halved in GenerateMap
 
         // Build hex coordinate map from all HexTiles
         HexTile[] allTiles = FindObjectsByType<HexTile>(FindObjectsSortMode.None);
+        Debug.Log($"BattleManager: Found {allTiles.Length} HexTile components");
+        
         foreach (HexTile tile in allTiles)
         {
+            if (tile == null) continue;
+            
             Vector2Int hexCoord = WorldToHexCoord(tile.transform.position);
+            
+            // Verify the coordinate is correct by checking distance
+            Vector3 expectedPos = HexCoordToWorld(hexCoord);
+            float distance = Vector3.Distance(tile.transform.position, expectedPos);
+            
+            // If distance is too large, this tile might be mapped incorrectly
+            if (distance > hexSize * 0.5f)
+            {
+                Debug.LogWarning($"Tile at {tile.transform.position} mapped to {hexCoord} but expected pos is {expectedPos}, distance: {distance}");
+            }
             
             // If coordinate already exists, keep the one closest to expected position
             if (hexTileMap.ContainsKey(hexCoord))
             {
-                Vector3 expectedPos = HexCoordToWorld(hexCoord);
                 float existingDist = Vector3.Distance(hexTileMap[hexCoord].transform.position, expectedPos);
                 float newDist = Vector3.Distance(tile.transform.position, expectedPos);
                 
@@ -76,7 +92,7 @@ public class BattleManager : MonoBehaviour
             }
         }
 
-        Debug.Log($"BattleManager initialized: {hexTileMap.Count} tiles mapped");
+        Debug.Log($"BattleManager initialized: {hexTileMap.Count} tiles mapped (expected: {mapWidth * mapHeight})");
     }
 
     void FindAllUnits()
@@ -124,23 +140,40 @@ public class BattleManager : MonoBehaviour
     /// <summary>
     /// Converts world position to hex coordinates (odd-r offset)
     /// Uses reverse of MapGenerator3D's formula: xPos = x * xOffset, zPos = z * zOffset + (x % 2 == 1 ? zOffset / 2f : 0f)
+    /// Improved: Tries all nearby x values and finds the best match
     /// </summary>
     Vector2Int WorldToHexCoord(Vector3 worldPos)
     {
-        // First estimate x coordinate
-        int x = Mathf.RoundToInt(worldPos.x / xOffset);
+        // Try all x values within reasonable range to find the best match
+        Vector2Int bestCoord = new Vector2Int(0, 0);
+        float bestDistance = float.MaxValue;
         
-        // Calculate z offset for this row
-        float zOffsetForRow = (x % 2 == 1) ? zOffset / 2f : 0f;
+        // Estimate x range to check (worldPos.x / xOffset ± 2)
+        int xCenter = Mathf.RoundToInt(worldPos.x / xOffset);
+        int xStart = Mathf.Max(0, xCenter - 2);
+        int xEnd = Mathf.Min(mapWidth - 1, xCenter + 2);
         
-        // Calculate z coordinate
-        int z = Mathf.RoundToInt((worldPos.z - zOffsetForRow) / zOffset);
+        for (int xTry = xStart; xTry <= xEnd; xTry++)
+        {
+            // Calculate z offset for this column
+            float zOffsetForRow = (xTry % 2 == 1) ? zOffset / 2f : 0f;
+            
+            // Calculate z coordinate
+            int zTry = Mathf.RoundToInt((worldPos.z - zOffsetForRow) / zOffset);
+            zTry = Mathf.Clamp(zTry, 0, mapHeight - 1);
+            
+            Vector2Int coordTry = new Vector2Int(xTry, zTry);
+            Vector3 expectedPosTry = HexCoordToWorld(coordTry);
+            float distTry = Vector3.Distance(worldPos, expectedPosTry);
+            
+            if (distTry < bestDistance)
+            {
+                bestDistance = distTry;
+                bestCoord = coordTry;
+            }
+        }
         
-        // Clamp to valid range
-        x = Mathf.Clamp(x, 0, mapWidth - 1);
-        z = Mathf.Clamp(z, 0, mapHeight - 1);
-        
-        return new Vector2Int(x, z);
+        return bestCoord;
     }
 
     /// <summary>
@@ -170,31 +203,95 @@ public class BattleManager : MonoBehaviour
 
         if (x % 2 == 0) // Even column
         {
-            // Forward diagonals: column n±2 (these are the "forward" neighbors)
-            if (x + 2 < mapWidth) neighbors.Add(new Vector2Int(x + 2, z));     // Forward-right
-            if (x - 2 >= 0) neighbors.Add(new Vector2Int(x - 2, z));          // Forward-left
-            
-            // Side diagonals: column n±1, same row
-            if (x + 1 < mapWidth && z < mapHeight) neighbors.Add(new Vector2Int(x + 1, z));      // Right side
-            if (x - 1 >= 0 && z < mapHeight) neighbors.Add(new Vector2Int(x - 1, z));             // Left side
-            
-            // Additional diagonals: column n±1, row z+1 (upward diagonals) - only if z+1 is valid
-            if (x + 1 < mapWidth && z + 1 < mapHeight) neighbors.Add(new Vector2Int(x + 1, z + 1));  // Right-up diagonal
-            if (x - 1 >= 0 && z + 1 < mapHeight) neighbors.Add(new Vector2Int(x - 1, z + 1));       // Left-up diagonal
+            // Special case: Top row tiles (z=1) use same logic as bottom row
+            if (z == 1)
+            {
+                // Connect downward to odd bottom row tiles: (x+1, z-1) and (x-1, z-1)
+                if (x + 1 < mapWidth && z - 1 >= 0) neighbors.Add(new Vector2Int(x + 1, z - 1));  // Connect to odd tile below-right
+                if (x - 1 >= 0 && z - 1 >= 0) neighbors.Add(new Vector2Int(x - 1, z - 1));       // Connect to odd tile below-left
+                
+                // Forward neighbors: (x+2, z) and (x-2, z) - same as bottom row
+                if (x + 2 < mapWidth) neighbors.Add(new Vector2Int(x + 2, z));
+                if (x - 2 >= 0) neighbors.Add(new Vector2Int(x - 2, z));
+                
+                // Side neighbors: (x+1, z) and (x-1, z) - same as bottom row
+                if (x + 1 < mapWidth) neighbors.Add(new Vector2Int(x + 1, z));
+                if (x - 1 >= 0) neighbors.Add(new Vector2Int(x - 1, z));
+            }
+            else if (z == 0)
+            {
+                // Special case: Even bottom row tiles (z=0) - NO upward diagonals, only horizontal
+                // Forward neighbors: (x+2, z) and (x-2, z)
+                if (x + 2 < mapWidth) neighbors.Add(new Vector2Int(x + 2, z));
+                if (x - 2 >= 0) neighbors.Add(new Vector2Int(x - 2, z));
+                
+                // Side neighbors: (x+1, z) and (x-1, z)
+                if (x + 1 < mapWidth) neighbors.Add(new Vector2Int(x + 1, z));
+                if (x - 1 >= 0) neighbors.Add(new Vector2Int(x - 1, z));
+                
+                // NO upward diagonals - only odd bottom row tiles connect to top row
+            }
+            else
+            {
+                // Regular even column logic (not top or bottom row)
+                // Forward diagonals: column n±2 (these are the "forward" neighbors)
+                if (x + 2 < mapWidth) neighbors.Add(new Vector2Int(x + 2, z));     // Forward-right
+                if (x - 2 >= 0) neighbors.Add(new Vector2Int(x - 2, z));          // Forward-left
+                
+                // Side diagonals: column n±1, same row
+                if (x + 1 < mapWidth && z < mapHeight) neighbors.Add(new Vector2Int(x + 1, z));      // Right side
+                if (x - 1 >= 0 && z < mapHeight) neighbors.Add(new Vector2Int(x - 1, z));             // Left side
+                
+                // Additional diagonals: column n±1, row z+1 (upward diagonals) - only if z+1 is valid
+                if (x + 1 < mapWidth && z + 1 < mapHeight) neighbors.Add(new Vector2Int(x + 1, z + 1));  // Right-up diagonal
+                if (x - 1 >= 0 && z + 1 < mapHeight) neighbors.Add(new Vector2Int(x - 1, z + 1));       // Left-up diagonal
+            }
         }
         else // Odd column
         {
-            // Forward diagonals: column n±2 (these are the "forward" neighbors)
-            if (x + 2 < mapWidth) neighbors.Add(new Vector2Int(x + 2, z));     // Forward-right
-            if (x - 2 >= 0) neighbors.Add(new Vector2Int(x - 2, z));            // Forward-left
-            
-            // Side diagonals: column n±1, same row
-            if (x + 1 < mapWidth && z < mapHeight) neighbors.Add(new Vector2Int(x + 1, z));      // Right side
-            if (x - 1 >= 0 && z < mapHeight) neighbors.Add(new Vector2Int(x - 1, z));            // Left side
-            
-            // Additional diagonals: column n±1, row z-1 (downward diagonals) - only if z-1 is valid
-            if (x + 1 < mapWidth && z - 1 >= 0) neighbors.Add(new Vector2Int(x + 1, z - 1));   // Right-down diagonal
-            if (x - 1 >= 0 && z - 1 >= 0) neighbors.Add(new Vector2Int(x - 1, z - 1));          // Left-down diagonal
+            // Special case: Odd-numbered bottom row tiles (x odd, z=0)
+            // Pattern: Use top row neighbors (z+1) with x±1, plus forward and side neighbors
+            if (z == 0)
+            {
+                // Top row neighbors: (x-1, z+1) and (x+1, z+1)
+                if (x - 1 >= 0 && z + 1 < mapHeight) neighbors.Add(new Vector2Int(x - 1, z + 1));
+                if (x + 1 < mapWidth && z + 1 < mapHeight) neighbors.Add(new Vector2Int(x + 1, z + 1));
+                
+                // Forward neighbors: (x+2, z) and (x-2, z)
+                if (x + 2 < mapWidth) neighbors.Add(new Vector2Int(x + 2, z));
+                if (x - 2 >= 0) neighbors.Add(new Vector2Int(x - 2, z));
+                
+                // Side neighbors: (x+1, z) and (x-1, z)
+                if (x + 1 < mapWidth) neighbors.Add(new Vector2Int(x + 1, z));
+                if (x - 1 >= 0) neighbors.Add(new Vector2Int(x - 1, z));
+            }
+            else if (z == 1)
+            {
+                // Special case: Odd top row tiles (z=1) - NO downward connections to bottom row
+                // Only odd bottom row tiles connect upward, not odd top row tiles downward
+                // Forward neighbors: (x+2, z) and (x-2, z)
+                if (x + 2 < mapWidth) neighbors.Add(new Vector2Int(x + 2, z));
+                if (x - 2 >= 0) neighbors.Add(new Vector2Int(x - 2, z));
+                
+                // Side neighbors: (x+1, z) and (x-1, z)
+                if (x + 1 < mapWidth) neighbors.Add(new Vector2Int(x + 1, z));
+                if (x - 1 >= 0) neighbors.Add(new Vector2Int(x - 1, z));
+            }
+            else
+            {
+                // Regular odd column logic (not bottom or top row)
+                // Forward diagonals: column n±2 (these are the "forward" neighbors)
+                if (x + 2 < mapWidth) neighbors.Add(new Vector2Int(x + 2, z));     // Forward-right
+                if (x - 2 >= 0) neighbors.Add(new Vector2Int(x - 2, z));            // Forward-left
+                
+                // Side diagonals: column n±1, same row
+                if (x + 1 < mapWidth && z < mapHeight) neighbors.Add(new Vector2Int(x + 1, z));      // Right side
+                if (x - 1 >= 0 && z < mapHeight) neighbors.Add(new Vector2Int(x - 1, z));            // Left side
+                
+                // Additional diagonals: column n±1, row z-1 (downward diagonals) - only if z-1 is valid
+                if (x + 1 < mapWidth && z - 1 >= 0) neighbors.Add(new Vector2Int(x + 1, z - 1));   // Right-down diagonal
+                if (x - 1 >= 0 && z - 1 >= 0) neighbors.Add(new Vector2Int(x - 1, z - 1));          // Left-down diagonal
+            }
         }
 
         // Validate neighbors exist in hexTileMap and are actually neighbors (not wrapping around)
@@ -231,6 +328,7 @@ public class BattleManager : MonoBehaviour
 
     /// <summary>
     /// Gets valid neighboring tiles (within map bounds and not occupied)
+    /// Checks actual world positions of units, not just hex position dictionary
     /// </summary>
     List<HexTile> GetValidNeighborTiles(Vector2Int hexCoord, int owner)
     {
@@ -249,33 +347,36 @@ public class BattleManager : MonoBehaviour
                 if (tile.CompareTag("Castle"))
                     continue;
 
-                // Check if tile is occupied by enemy unit
+                // Check if tile is occupied by checking actual world positions of units
                 bool occupiedByEnemy = false;
-                Unit enemyUnit = null;
-                foreach (var kvp in unitHexPositions)
-                {
-                    if (kvp.Value == neighbor && kvp.Key != null && unitOwners[kvp.Key] != owner)
-                    {
-                        occupiedByEnemy = true;
-                        enemyUnit = kvp.Key;
-                        break;
-                    }
-                }
-
-                // Check if occupied by friendly unit
                 bool occupiedByFriendly = false;
-                foreach (var kvp in unitHexPositions)
+                
+                foreach (Unit unit in allUnits)
                 {
-                    if (kvp.Value == neighbor && kvp.Key != null && unitOwners[kvp.Key] == owner)
+                    if (unit == null || !unit.IsAlive())
+                        continue;
+                    
+                    // Check actual world position, not just hex position dictionary
+                    Vector2Int unitActualHex = WorldToHexCoord(unit.transform.position);
+                    
+                    if (unitActualHex == neighbor)
                     {
-                        occupiedByFriendly = true;
-                        break;
+                        if (unitOwners[unit] == owner)
+                        {
+                            occupiedByFriendly = true;
+                            break; // Can't move here if friendly unit is there
+                        }
+                        else
+                        {
+                            occupiedByEnemy = true;
+                            // Don't break - check all units, but enemy units allow movement (for combat)
+                        }
                     }
                 }
 
                 // Can move to empty tiles or tiles with enemies (for combat)
                 // Cannot move to tiles with friendly units
-                if (!occupiedByFriendly && (!tile.isOccupied || occupiedByEnemy))
+                if (!occupiedByFriendly)
                 {
                     validTiles.Add(tile);
                 }
@@ -372,7 +473,10 @@ public class BattleManager : MonoBehaviour
         if (!unitHexPositions.ContainsKey(unit))
             return;
 
-        Vector2Int currentHex = unitHexPositions[unit];
+        // Update unit's hex position based on actual world position (in case it moved)
+        Vector2Int currentHex = WorldToHexCoord(unit.transform.position);
+        unitHexPositions[unit] = currentHex;
+        
         int owner = unitOwners[unit];
 
         // Find target (enemy unit or enemy castle)
@@ -385,11 +489,32 @@ public class BattleManager : MonoBehaviour
         }
 
         // Check if already adjacent to target (combat)
+        // Use actual positions of enemy units, not just hex coordinates
         List<Vector2Int> neighbors = GetHexNeighbors(currentHex);
-        if (neighbors.Contains(targetHex.Value))
+        bool isAdjacentToTarget = neighbors.Contains(targetHex.Value);
+        
+        // Also check if there's an enemy unit actually at a neighbor position
+        Unit enemyUnitAtNeighbor = null;
+        foreach (Vector2Int neighbor in neighbors)
+        {
+            Unit enemyUnit = GetUnitAtHex(neighbor);
+            if (enemyUnit != null && enemyUnit.IsAlive() && unitOwners[enemyUnit] != owner)
+            {
+                // Verify unit is actually at this position (not just moving there)
+                Vector2Int enemyActualHex = WorldToHexCoord(enemyUnit.transform.position);
+                if (enemyActualHex == neighbor)
+                {
+                    enemyUnitAtNeighbor = enemyUnit;
+                    isAdjacentToTarget = true;
+                    break;
+                }
+            }
+        }
+        
+        if (isAdjacentToTarget)
         {
             // Attack target
-            Unit enemyUnit = GetUnitAtHex(targetHex.Value);
+            Unit enemyUnit = enemyUnitAtNeighbor ?? GetUnitAtHex(targetHex.Value);
             if (enemyUnit != null && enemyUnit.IsAlive())
             {
                 AttackUnit(unit, enemyUnit);
@@ -412,20 +537,25 @@ public class BattleManager : MonoBehaviour
 
     Vector2Int? FindTarget(Unit unit, int owner)
     {
-        Vector2Int currentHex = unitHexPositions[unit];
+        // Use actual world position, not just hex position dictionary
+        Vector2Int currentHex = WorldToHexCoord(unit.transform.position);
         Vector2Int? closestTarget = null;
         float closestDistance = float.MaxValue;
 
-        // Find closest enemy unit (only alive ones)
-        foreach (var kvp in unitHexPositions)
+        // Find closest enemy unit (only alive ones) - check actual positions
+        foreach (Unit enemyUnit in allUnits)
         {
-            if (kvp.Key != null && kvp.Key.IsAlive() && unitOwners[kvp.Key] != owner && kvp.Key != unit)
+            if (enemyUnit == null || enemyUnit == unit || !enemyUnit.IsAlive())
+                continue;
+            
+            if (unitOwners[enemyUnit] != owner)
             {
-                float dist = HexDistance(currentHex, kvp.Value);
+                Vector2Int enemyHex = WorldToHexCoord(enemyUnit.transform.position);
+                float dist = HexDistance(currentHex, enemyHex);
                 if (dist < closestDistance)
                 {
                     closestDistance = dist;
-                    closestTarget = kvp.Value;
+                    closestTarget = enemyHex;
                 }
             }
         }
@@ -455,19 +585,23 @@ public class BattleManager : MonoBehaviour
         if (neighbors.Count == 0)
             return null;
 
-        // Simple pathfinding: move to neighbor closest to target
+        // Improved pathfinding: prioritize moves that help reach the target row
         HexTile bestTile = null;
-        float bestDistance = float.MaxValue;
+        float bestScore = float.MaxValue;
 
         foreach (HexTile tile in neighbors)
         {
             Vector2Int tileHex = WorldToHexCoord(tile.transform.position);
             
-            // Skip if occupied by friendly unit
+            // Double-check: Skip if occupied by friendly unit (check actual positions)
             bool occupiedByFriendly = false;
-            foreach (var kvp in unitHexPositions)
+            foreach (Unit unit in allUnits)
             {
-                if (kvp.Value == tileHex && unitOwners[kvp.Key] == owner && kvp.Key != null)
+                if (unit == null || !unit.IsAlive())
+                    continue;
+                
+                Vector2Int unitActualHex = WorldToHexCoord(unit.transform.position);
+                if (unitActualHex == tileHex && unitOwners[unit] == owner)
                 {
                     occupiedByFriendly = true;
                     break;
@@ -475,10 +609,56 @@ public class BattleManager : MonoBehaviour
             }
             if (occupiedByFriendly) continue;
 
+            // Calculate distance to target
             float dist = HexDistance(tileHex, to);
-            if (dist < bestDistance)
+            
+            // Special case: If unit is in bottom row (z=0) and target is in top row (z=1)
+            // Prioritize moving to odd columns (which can move up)
+            if (from.y == 0 && to.y == 1)
             {
-                bestDistance = dist;
+                // If this neighbor is an odd column, give it a bonus (reduce score)
+                if (tileHex.x % 2 == 1)
+                {
+                    dist -= 0.5f; // Prefer odd columns
+                }
+                // If this neighbor is still in bottom row and even column, penalize it
+                else if (tileHex.y == 0 && tileHex.x % 2 == 0)
+                {
+                    dist += 1.0f; // Penalize staying in even bottom row
+                }
+            }
+            
+            // Special case: If unit is in top row (z=1) and target is in bottom row (z=0)
+            // Prioritize moving to even columns (which can move down)
+            if (from.y == 1 && to.y == 0)
+            {
+                // If this neighbor is an even column in top row, give it a bonus
+                if (tileHex.x % 2 == 0 && tileHex.y == 1)
+                {
+                    dist -= 0.5f; // Prefer even columns in top row
+                }
+                // If this neighbor is still in top row and odd column, penalize it slightly
+                else if (tileHex.y == 1 && tileHex.x % 2 == 1)
+                {
+                    dist += 0.5f; // Slight penalty for odd columns in top row
+                }
+            }
+            
+            // Prefer moves that reduce row distance
+            int rowDiffFrom = Mathf.Abs(from.y - to.y);
+            int rowDiffTo = Mathf.Abs(tileHex.y - to.y);
+            if (rowDiffTo < rowDiffFrom)
+            {
+                dist -= 0.3f; // Bonus for reducing row distance
+            }
+            else if (rowDiffTo > rowDiffFrom)
+            {
+                dist += 0.3f; // Penalty for increasing row distance
+            }
+
+            if (dist < bestScore)
+            {
+                bestScore = dist;
                 bestTile = tile;
             }
         }
@@ -502,6 +682,25 @@ public class BattleManager : MonoBehaviour
 
     void MoveUnit(Unit unit, Vector2Int fromHex, Vector2Int toHex)
     {
+        // Check if target tile is actually free (double-check with actual positions)
+        bool tileIsFree = true;
+        foreach (Unit otherUnit in allUnits)
+        {
+            if (otherUnit == null || otherUnit == unit || !otherUnit.IsAlive())
+                continue;
+            
+            Vector2Int otherUnitHex = WorldToHexCoord(otherUnit.transform.position);
+            if (otherUnitHex == toHex)
+            {
+                tileIsFree = false;
+                Debug.LogWarning($"Cannot move unit to {toHex} - tile is occupied by another unit");
+                break;
+            }
+        }
+        
+        if (!tileIsFree)
+            return; // Don't move if tile is occupied
+        
         // Update tile occupancy
         if (hexTileMap.TryGetValue(fromHex, out HexTile fromTile))
             fromTile.isOccupied = false;
@@ -509,7 +708,7 @@ public class BattleManager : MonoBehaviour
         if (hexTileMap.TryGetValue(toHex, out HexTile toTile))
             toTile.isOccupied = true;
 
-        // Update unit position
+        // Update unit position dictionary (will be verified next turn based on actual position)
         unitHexPositions[unit] = toHex;
         Vector3 targetWorldPos = HexCoordToWorld(toHex);
         unit.MoveTo(targetWorldPos);
@@ -519,10 +718,15 @@ public class BattleManager : MonoBehaviour
 
     Unit GetUnitAtHex(Vector2Int hex)
     {
-        foreach (var kvp in unitHexPositions)
+        // Check actual world positions, not just hex position dictionary
+        foreach (Unit unit in allUnits)
         {
-            if (kvp.Value == hex && kvp.Key != null)
-                return kvp.Key;
+            if (unit == null || !unit.IsAlive())
+                continue;
+            
+            Vector2Int unitActualHex = WorldToHexCoord(unit.transform.position);
+            if (unitActualHex == hex)
+                return unit;
         }
         return null;
     }
