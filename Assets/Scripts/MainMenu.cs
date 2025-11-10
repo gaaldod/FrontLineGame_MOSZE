@@ -24,17 +24,32 @@ public class MainMenu : MonoBehaviour
     // Stores original button colors to restore when re-enabling
     private readonly Dictionary<Button, ColorBlock> originalButtonColors = new Dictionary<Button, ColorBlock>();
 
+    // PlayerPrefs key used to remember that the intro has already been shown
+    private const string IntroSeenKey = "FrontlineGame_IntroSeen_v1";
+
+    // Control flag for animation event/end
+    private bool introFinishedByEvent = false;
+
+
     void Start()
     {
-        //if first start, show intro scene (use playerprefs for this)
-
-        ShowIntroScene();
-        // Ensure only main menu is visible at startup
-        ShowMainMenu();
-
-        // Initialize save system and check for saves
+        // Initialize save system first so we can decide whether to show the intro
         InitializeSaveSystem();
-        CheckForSaveFiles();
+
+        bool saveFilesExist = DoSaveFilesExist();
+
+        // Show intro only if there are no save files AND the intro has not been shown before
+        if (!saveFilesExist && !PlayerPrefs.HasKey(IntroSeenKey))
+        {
+            // Play intro and after it finishes, show main menu and initialize save checks
+            StartCoroutine(PlayIntroThenShowMain());
+        }
+        else
+        {
+            // Normal startup: show main menu immediately and check saves
+            ShowMainMenu();
+            CheckForSaveFiles();
+        }
     }
 
     void InitializeSaveSystem()
@@ -134,5 +149,81 @@ public class MainMenu : MonoBehaviour
         if (introScenePanel != null) introScenePanel.SetActive(false);
         if (settingsPanel != null) settingsPanel.SetActive(false);
         if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
+    }
+
+    // Coroutine that handles intro playback, waits for animation to finish, marks intro seen and shows main menu
+    private IEnumerator PlayIntroThenShowMain()
+    {
+        introFinishedByEvent = false;
+
+        // Ensure main menu/settings are hidden while intro plays
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+
+        // Enable intro UI
+        if (introScenePanel != null) introScenePanel.SetActive(true);
+
+        // Try Animator first (Animator + runtime controller)
+        float waitTime = 0f;
+        Animator animator = introScenePanel != null ? introScenePanel.GetComponent<Animator>() : null;
+        if (animator != null && animator.runtimeAnimatorController != null)
+        {
+            // Determine a safe clip length (take the longest clip on the controller)
+            foreach (var clip in animator.runtimeAnimatorController.animationClips)
+            {
+                if (clip != null && clip.length > waitTime) waitTime = clip.length;
+            }
+            // Play default state to ensure it starts (use layer 0)
+            animator.Play(0, 0, 0f);
+        }
+        else
+        {
+            // Fallback to legacy Animation component
+            Animation legacy = introScenePanel != null ? introScenePanel.GetComponent<Animation>() : null;
+            if (legacy != null)
+            {
+                // Play default clip if assigned and get its length
+                if (legacy.clip != null)
+                {
+                    waitTime = legacy.clip.length;
+                    legacy.Play();
+                }
+                else
+                {
+                    // Try any clip on the Animation component
+                    foreach (AnimationState state in legacy)
+                    {
+                        if (state != null && state.clip != null && state.clip.length > waitTime)
+                            waitTime = state.clip.length;
+                    }
+                    if (waitTime > 0f) legacy.Play();
+                }
+            }
+        }
+        // If no animator/animation or no clip length detected, fallback to 3 seconds
+        if (waitTime <= 0f) waitTime = 3f;
+
+        // Wait until either the animation finished or an animation event calls OnIntroAnimationEnd()
+        float elapsed = 0f;
+        while (elapsed < waitTime && !introFinishedByEvent)
+        {
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        // Mark intro as shown so it won't play again
+        PlayerPrefs.SetInt(IntroSeenKey, 1);
+        PlayerPrefs.Save();
+
+        // Hide intro and show main menu, then update save-button states
+        if (introScenePanel != null) introScenePanel.SetActive(false);
+        ShowMainMenu();
+        CheckForSaveFiles();
+    }
+
+    // Public method you can call from an Animation Event at the end of the clip to end intro immediately
+    public void OnIntroAnimationEnd()
+    {
+        introFinishedByEvent = true;
     }
 }
