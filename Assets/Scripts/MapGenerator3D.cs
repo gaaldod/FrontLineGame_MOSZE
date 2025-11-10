@@ -34,7 +34,7 @@ public class HexMap3D : MonoBehaviour
 
                 GameObject tile;
 
-                // 🏰 Kastély a jobb felső sarokba
+                // Kastely a jobb felso sarkba
                 if (x == width - 1 && z == height - 1)
                 {
                     tile = Instantiate(castleHexPrefab, position, Quaternion.identity, transform);
@@ -45,18 +45,18 @@ public class HexMap3D : MonoBehaviour
                     tile = Instantiate(groundHexPrefab, position, Quaternion.identity, transform);
                 }
 
-                // ⚙️ Layer beállítása
+                // Layer beallitasa
                 if (x < width / 2)
                     tile.layer = LayerMask.NameToLayer("LeftZone");
                 else
                     tile.layer = LayerMask.NameToLayer("RightZone");
 
-                // 🧩 HexTile komponens biztosítása
+                // HexTile komponens biztosítása
                 if (tile.GetComponent<HexTile>() == null)
                     tile.AddComponent<HexTile>();
             }
         }
 
-        Debug.Log($"✅ Hex map generálva: {width} x {height}");
+        Debug.Log($"Hex map generalva: {width} x {height}");
     }
 }

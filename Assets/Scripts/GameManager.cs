@@ -12,6 +12,7 @@ public class GameManager : MonoBehaviour
     public GameObject unitPrefab;
     public Button buyLeftButton;
     public Button buyRightButton;
+    public Button startBattleButton;
     public TMP_Text leftGoldText;
     public TMP_Text rightGoldText;
 
@@ -36,7 +37,7 @@ public class GameManager : MonoBehaviour
         if (WorldManager.Instance != null)
         {
             gold = (int[])WorldManager.Instance.GetGold().Clone();
-            Debug.Log($"💰 Átvett arany: Bal={gold[0]}, Jobb={gold[1]}");
+            Debug.Log($"Atvett arany: Bal={gold[0]}, Jobb={gold[1]}");
         }
         else
         {
@@ -50,6 +51,29 @@ public class GameManager : MonoBehaviour
             buyLeftButton.onClick.AddListener(() => StartPlacingUnit(0));
         if (buyRightButton != null)
             buyRightButton.onClick.AddListener(() => StartPlacingUnit(1));
+        if (startBattleButton != null)
+            startBattleButton.onClick.AddListener(StartBattle);
+    }
+
+    public void StartBattle()
+    {
+        Debug.Log("GameManager.StartBattle() called");
+        
+        if (startBattleButton == null)
+        {
+            Debug.LogError("Start Battle Button is not assigned in GameManager! Please assign it in the Inspector.");
+            return;
+        }
+        
+        if (BattleManager.Instance != null)
+        {
+            BattleManager.Instance.StartBattle();
+            Debug.Log("Battle started!");
+        }
+        else
+        {
+            Debug.LogError("BattleManager not found! Make sure BattleManager component exists in the scene.");
+        }
     }
 
     void Update()
@@ -69,7 +93,7 @@ public class GameManager : MonoBehaviour
 
     public void EndGame(int winner)
     {
-        Debug.Log($"🎉 Játékos {winner + 1} NYERT!");
+        Debug.Log($"Jatekos {winner + 1} NYERT!");
         gold[winner] += 5;
 
         if (WorldManager.Instance != null)
@@ -94,7 +118,7 @@ public class GameManager : MonoBehaviour
 
         if (gold[player] < unitCost)
         {
-            Debug.Log($"❌ Játékos {player + 1} nem engedheti meg magának a unitot!");
+            Debug.Log($"Jatekos {player + 1} nem engedheti meg maganak a unitot!");
             return;
         }
 
@@ -156,7 +180,7 @@ public class GameManager : MonoBehaviour
         isPlacingUnit = false;
         ghostUnit = null;
 
-        Debug.Log($"🪖 Játékos {activePlayer + 1} unitot helyezett le!");
+        Debug.Log($"Jatekos {activePlayer + 1} unitot helyezett le!");
     }
 
     void UpdateGoldUI()
