@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine.SceneManagement;
 
 public class BattleManager : MonoBehaviour
 {
@@ -377,11 +378,8 @@ public class BattleManager : MonoBehaviour
                     
                     if (unitActualHex == neighbor)
                     {
-                        if (unitOwners[unit] != null)
-                        {
-                            occupiedByUnit = true;
-                            break; // Can't move here if friendly unit is there
-                        }
+                        occupiedByUnit = true;
+                        break; // Can't move here if unit is there
                     }
                 }
 
@@ -649,47 +647,20 @@ public class BattleManager : MonoBehaviour
             openSet.Remove(current);
             closedSet.Add(current);
 
+            // Get validated neighbor tiles according to your occupancy/reservation rules
+            var validNeighborTiles = GetValidNeighborTiles(current, owner);
+            HashSet<Vector2Int> validSet = new HashSet<Vector2Int>(validNeighborTiles.Select(t => WorldToHexCoord(t.transform.position)));
+
             foreach (Vector2Int neighbor in GetHexNeighbors(current))
             {
                 if (closedSet.Contains(neighbor)) continue;
 
-                // Determine passability:
-                // - If neighbor == goal: allow even if occupied by enemy
-                // - Otherwise, disallow if castle or occupied/reserved or occupied by friendly
                 if (!hexTileMap.TryGetValue(neighbor, out HexTile neighborTile))
                     continue;
 
-                // treat castle as non-passable (attacking handled separately)
-                if (neighborTile.CompareTag("Castle") && neighbor != goal)
-                    continue;
-
-                // Check occupancy/reservation
-                bool occupied = neighborTile.isOccupied;
-                bool reserved = reservedTiles.Contains(neighbor);
-
-                // If neighbor is goal, allow entering even if enemy-occupied (for combat)
-                if (neighbor != goal)
+                // If neighbor is goal, allow entering if enemy-occupied (but disallow if friendly occupies)
+                if (neighbor == goal)
                 {
-                    if (occupied || reserved)
-                        continue;
-
-                    // Also skip if friendly unit is actually on that tile
-                    bool occupiedByFriendly = false;
-                    foreach (Unit u in allUnits)
-                    {
-                        if (u == null || !u.IsAlive()) continue;
-                        Vector2Int uHex = WorldToHexCoord(u.transform.position);
-                        if (uHex == neighbor && unitOwners.ContainsKey(u) && unitOwners[u] == owner)
-                        {
-                            occupiedByFriendly = true;
-                            break;
-                        }
-                    }
-                    if (occupiedByFriendly) continue;
-                }
-                else
-                {
-                    // If goal is occupied by friendly, abort path
                     bool goalOccupiedByFriendly = false;
                     foreach (Unit u in allUnits)
                     {
@@ -702,6 +673,13 @@ public class BattleManager : MonoBehaviour
                         }
                     }
                     if (goalOccupiedByFriendly) continue;
+                    // goal allowed even if enemy-occupied
+                }
+                else
+                {
+                    // For non-goal neighbors, require GetValidNeighborTiles approval
+                    if (!validSet.Contains(neighbor))
+                        continue;
                 }
 
                 int tentativeG = (gScore.ContainsKey(current) ? gScore[current] : int.MaxValue/4) + 1;
@@ -895,6 +873,23 @@ public class BattleManager : MonoBehaviour
     {
         battleInProgress = false;
         StopAllCoroutines();
+
+        //SKELETON
+        // Feature: if defender won and attacker has 0 gold, log message and return to main menu
+        if (GameManager.Instance != null)
+        {
+            // Attacker's money is stored in gold[0], so check that directly
+            int attackerGold = GameManager.Instance.GetGold(0);
+
+            // If the defender (player 1) won and attacker (player 0) has no gold, show message and go to main menu
+            if (winner == 1 && attackerGold == 0)
+            {
+                Debug.Log("[Demo] Attacker ran out of money; defender side won the war.");
+                SceneManager.LoadScene("MainMenu");
+                return;
+            }
+        }
+        //SKELETON
 
         if (GameManager.Instance != null && winner >= 0)
         {

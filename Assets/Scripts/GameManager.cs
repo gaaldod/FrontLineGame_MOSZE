@@ -131,6 +131,13 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene("WorldMapScene");
     }
 
+    //SKELETON (GD) Public helper to read a player's current gold (avoiding softlocks)
+    public int GetGold(int player)
+    {
+        if (player < 0 || player >= gold.Length) return 0;
+        return gold[player];
+    }
+    //SKELETON(GD) END
     void CancelPlacingUnit()
     {
         if (!isPlacingUnit) return;
