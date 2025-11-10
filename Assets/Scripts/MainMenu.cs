@@ -11,6 +11,7 @@ public class MainMenu : MonoBehaviour
     [Header("UI Panels")]
     public GameObject mainMenuPanel;
     public GameObject settingsPanel;
+    public GameObject introScenePanel;
 
     [Header("Save-related Buttons")]
     public Button continueButton;
@@ -25,6 +26,9 @@ public class MainMenu : MonoBehaviour
 
     void Start()
     {
+        //if first start, show intro scene (use playerprefs for this)
+
+        ShowIntroScene();
         // Ensure only main menu is visible at startup
         ShowMainMenu();
 
@@ -113,12 +117,21 @@ public class MainMenu : MonoBehaviour
 
     public void ShowSettings()
     {
+        if (introScenePanel != null) introScenePanel.SetActive(false);
         if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
         if (settingsPanel != null) settingsPanel.SetActive(true);
     }
 
+    public void ShowIntroScene() 
+    {
+        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
+        if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (introScenePanel != null) introScenePanel.SetActive(true);
+    }
+
     public void ShowMainMenu()
     {
+        if (introScenePanel != null) introScenePanel.SetActive(false);
         if (settingsPanel != null) settingsPanel.SetActive(false);
         if (mainMenuPanel != null) mainMenuPanel.SetActive(true);
     }
