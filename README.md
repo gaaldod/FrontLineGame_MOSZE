@@ -32,7 +32,7 @@ A játék maximum **14 körig** tart. Egy kör:
 **Győzelem:**
 - Támadó: elfoglalja a kastély mezőt  
 - A game scene-en belül, ha elfoglaljuk az adott erődöt, ezzel jelezve a World Map-nek, hogy a csata befejeződött, és ez alapján elfoglalják a mezőt
-    A nyilakkal lehetőségünk van gyorsítani a játékmenetet, ha a bal nyílra nyomunk a bal oldali játékos nyer, ha a jobb oldalira, akkor pedig a jobb oldali.
+- A nyilakkal lehetőségünk van gyorsítani a játékmenetet, ha a bal nyílra nyomunk a bal oldali játékos nyer, ha a jobb oldalira, akkor pedig a jobb oldali.
 
 ---
 
