@@ -21,6 +21,10 @@ public class MainMenu : MonoBehaviour
     [Header("Save Settings")]
     public string saveFolderName = "saves";
     private string saveFolderPath;
+    
+    [Header("Skip Intro Settings")]
+    [Tooltip("The key to press to skip the intro")]
+    public KeyCode skipKey = KeyCode.Space;
 
     // Stores original button colors to restore when re-enabling
     private readonly Dictionary<Button, ColorBlock> originalButtonColors = new Dictionary<Button, ColorBlock>();
@@ -34,40 +38,37 @@ public class MainMenu : MonoBehaviour
     
     // Track maximum time reached to detect when intro has played enough
     private double maxTimeReached = 0.0;
+    
+    // Flag to prevent multiple skip calls
+    private bool skipInProgress = false;
+    
+    // Flag to track if we're currently showing the intro (for input detection)
+    private bool isShowingIntro = false;
 
 
     void Start()
     {
-        Debug.Log("MainMenu.Start() called");
         // Initialize save system first so we can decide whether to show the intro
         InitializeSaveSystem();
 
         bool saveFilesExist = DoSaveFilesExist();
         bool introSeen = PlayerPrefs.HasKey(IntroSeenKey);
-        Debug.Log($"MainMenu.Start() - Save files exist: {saveFilesExist}, Intro seen: {introSeen}");
         
         // TEMPORARY: Clear intro seen flag for testing (remove this line once intro works correctly)
         PlayerPrefs.DeleteKey(IntroSeenKey);
         introSeen = false;
-        Debug.Log("MainMenu.Start() - Cleared IntroSeenKey for testing");
 
         // Show intro only if there are no save files AND the intro has not been shown before
         if (!saveFilesExist && !introSeen)
         {
-            Debug.Log("MainMenu.Start() - Starting intro");
             if (!introStarted)
             {
                 introStarted = true;
                 StartIntro();
             }
-            else
-            {
-                Debug.LogWarning("MainMenu.Start() - Intro already started, skipping");
-            }
         }
         else
         {
-            Debug.Log("MainMenu.Start() - Showing main menu (intro skipped)");
             // Normal startup: show main menu immediately and check saves
             // Make sure introScene is disabled if intro is skipped
             if (introScenePanel != null)
@@ -86,7 +87,6 @@ public class MainMenu : MonoBehaviour
                     introScene.SetActive(false);
                     Canvas introCanvas = introScene.GetComponent<Canvas>();
                     if (introCanvas != null) introCanvas.enabled = false;
-                    Debug.Log("MainMenu.Start() - Found and disabled introScene by name");
                 }
             }
             ShowMainMenu();
@@ -96,6 +96,43 @@ public class MainMenu : MonoBehaviour
     
     void Update()
     {
+        // Try to find introScenePanel if it's not assigned
+        if (introScenePanel == null)
+        {
+            GameObject foundPanel = GameObject.Find("introScene");
+            if (foundPanel == null) foundPanel = GameObject.Find("IntroScene");
+            if (foundPanel != null)
+            {
+                introScenePanel = foundPanel;
+            }
+        }
+        
+        // Ensure playableDirector is set
+        if (playableDirector == null && introScenePanel != null)
+        {
+            playableDirector = introScenePanel.GetComponent<PlayableDirector>();
+            if (playableDirector == null)
+            {
+                playableDirector = introScenePanel.GetComponentInChildren<PlayableDirector>();
+            }
+        }
+        
+        // Check if intro panel is active
+        bool introPanelActive = introScenePanel != null && introScenePanel.activeInHierarchy;
+        
+        // Update isShowingIntro flag based on panel state
+        // IMPORTANT: Keep isShowingIntro true if panel is active OR if we just set it in StartIntro()
+        // This ensures input detection works even if PlayableDirector stops immediately
+        if (introPanelActive)
+        {
+            isShowingIntro = true;
+        }
+        else if (!introPanelActive && isShowingIntro)
+        {
+            // Only clear flag if panel has been inactive for a moment (handled by DelayedHideIntro)
+            // Don't clear immediately to allow input detection
+        }
+        
         // Track maximum time reached while timeline is playing
         if (playableDirector != null && playableDirector.enabled && playableDirector.state == PlayState.Playing)
         {
@@ -103,6 +140,17 @@ public class MainMenu : MonoBehaviour
             if (currentTime > maxTimeReached)
             {
                 maxTimeReached = currentTime;
+            }
+        }
+        
+        // Check for skip key press - check BOTH isShowingIntro flag AND panel active state
+        // This ensures we catch input even if timing is off
+        if ((isShowingIntro || introPanelActive) && !skipInProgress)
+        {
+            if (Input.GetKeyDown(skipKey))
+            {
+                skipInProgress = true;
+                SkipIntro();
             }
         }
     }
@@ -296,25 +344,18 @@ public class MainMenu : MonoBehaviour
         }
     }
 
-    // Simple void method to start the intro - no coroutine needed!
     private void StartIntro()
     {
-        Debug.Log("StartIntro() called");
         maxTimeReached = 0.0;
 
-        // Mark intro as seen immediately when it starts - user will either watch it or skip it
         PlayerPrefs.SetInt(IntroSeenKey, 1);
         PlayerPrefs.Save();
-        Debug.Log("StartIntro() - Marked intro as seen (user is watching it now)");
 
-        // Ensure main menu/settings are hidden while intro plays
         if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
         if (settingsPanel != null) settingsPanel.SetActive(false);
 
-        // Enable intro UI - try to find it if not assigned
         if (introScenePanel == null)
         {
-            // Try to find it by name - it's called "introScene"
             GameObject foundPanel = GameObject.Find("introScene");
             if (foundPanel == null)
             {
@@ -324,7 +365,6 @@ public class MainMenu : MonoBehaviour
             if (foundPanel != null)
             {
                 introScenePanel = foundPanel;
-                Debug.Log($"StartIntro() - Found introScenePanel by name: {foundPanel.name}");
             }
             else
             {
@@ -334,65 +374,43 @@ public class MainMenu : MonoBehaviour
         }
         
         introScenePanel.SetActive(true);
-        Debug.Log($"StartIntro() - introScenePanel activated: {introScenePanel.name}");
+        
+        isShowingIntro = true;
+        skipInProgress = false;
 
-        // Reset reference
         playableDirector = null;
 
-        // Try PlayableDirector (Timeline) first - check on introScenePanel and its children
         playableDirector = introScenePanel != null ? introScenePanel.GetComponent<PlayableDirector>() : null;
         if (playableDirector == null && introScenePanel != null)
         {
             playableDirector = introScenePanel.GetComponentInChildren<PlayableDirector>();
-            Debug.Log($"StartIntro() - PlayableDirector found in children: {playableDirector != null}");
         }
         
         if (playableDirector != null)
         {
-            Debug.Log($"StartIntro() - Found PlayableDirector on: {playableDirector.gameObject.name}");
-            
-            // CRITICAL: Stop any existing playback first
             playableDirector.Stop();
             
-            // CRITICAL: Force wrap mode to None using multiple methods
-            // Method 1: Set extrapolationMode (newer Unity API)
             playableDirector.extrapolationMode = DirectorWrapMode.None;
             
-            // Method 2: Try to set wrapMode property via reflection (older Unity API)
             var wrapModeProperty = typeof(PlayableDirector).GetProperty("wrapMode");
             if (wrapModeProperty != null)
             {
                 wrapModeProperty.SetValue(playableDirector, DirectorWrapMode.None);
-                Debug.Log("StartIntro() - Set wrapMode to None via reflection");
             }
-            
-            // Method 3: Try to set it via the playableAsset if possible
-            // The playableAsset itself might have loop settings, but we can't easily change those
             
             playableDirector.playOnAwake = false;
             
-            Debug.Log($"StartIntro() - After setting wrap mode - ExtrapolationMode: {playableDirector.extrapolationMode}, WrapMode property exists: {wrapModeProperty != null}");
-            
-            // Subscribe to stopped so we reliably know when the timeline ends
             playableDirector.stopped += OnPlayableDirectorStopped;
-            double directorDuration = playableDirector.duration;
-            Debug.Log($"StartIntro() - PlayableDirector duration: {directorDuration:F2}s, Extrapolation: {playableDirector.extrapolationMode}, PlayOnAwake: {playableDirector.playOnAwake}");
             
-            // Reset time to 0 before playing
             playableDirector.time = 0;
             playableDirector.Play();
-            Debug.Log($"StartIntro() - PlayableDirector.Play() called, state: {playableDirector.state}, time: {playableDirector.time:F2}");
             
-            // CRITICAL: Set wrap mode again AFTER playing, as some Unity versions reset it
             playableDirector.extrapolationMode = DirectorWrapMode.None;
             if (wrapModeProperty != null)
             {
                 wrapModeProperty.SetValue(playableDirector, DirectorWrapMode.None);
             }
-            Debug.Log($"StartIntro() - Set wrap mode again after Play()");
             
-            // Also try to disable looping on individual clips if possible
-            // Note: This might not work for all Unity versions, but worth trying
             if (playableDirector.playableAsset != null)
             {
                 var playableAssetType = playableDirector.playableAsset.GetType();
@@ -426,94 +444,115 @@ public class MainMenu : MonoBehaviour
                                 }
                             }
                         }
-                        Debug.Log("StartIntro() - Attempted to disable looping on animation clips");
                     }
                 }
             }
         }
-        else
-        {
-            Debug.LogWarning("StartIntro() - No PlayableDirector found on introScenePanel or its children!");
-        }
     }
 
-    // Public method you can call from an Animation Event at the end of the clip to end intro immediately
     public void OnIntroAnimationEnd()
     {
-        Debug.Log("OnIntroAnimationEnd() called by Animation Event.");
-
     }
 
-    // PlayableDirector stopped callback
-    private void OnPlayableDirectorStopped(PlayableDirector pd)
+    private void SkipIntro()
     {
-        Debug.Log($"PlayableDirector stopped event received. Time: {pd.time:F2}, MaxTimeReached: {maxTimeReached:F2}, Duration: {pd.duration:F2}, State: {pd.state}");
+        isShowingIntro = false;
         
-        // Since we mark intro as seen when it starts, we should hide it and show main menu whenever it stops
-        // This handles both normal completion and early stops/restarts
-        bool shouldShowMainMenu = true;
-        
-        // Only check if we've seen enough if maxTimeReached is still 0 (timeline stopped immediately)
-        // Otherwise, if we've seen at least 5 seconds or reached duration, show main menu
-        if (maxTimeReached < 5.0 && pd.time < pd.duration - 0.1f)
+        if (playableDirector != null)
         {
-            Debug.Log($"OnPlayableDirectorStopped() - Timeline stopped very early (time: {pd.time:F2}, maxTime: {maxTimeReached:F2}). Timeline might restart, but we'll hide intro anyway since it's marked as seen.");
+            playableDirector.stopped -= OnPlayableDirectorStopped;
+            playableDirector.Stop();
+            playableDirector.enabled = false;
         }
         
-        if (shouldShowMainMenu)
+        if (introScenePanel != null)
         {
-            Debug.Log("OnPlayableDirectorStopped() - Hiding intro and showing main menu");
+            introScenePanel.SetActive(false);
             
-            // CRITICAL: Immediately hide intro and show main menu, regardless of timeline state
-            if (introScenePanel != null)
+            Canvas introCanvas = introScenePanel.GetComponent<Canvas>();
+            if (introCanvas != null)
             {
-                introScenePanel.SetActive(false);
-                Debug.Log("OnPlayableDirectorStopped() - Disabled introScenePanel");
-                
-                // Also disable the Canvas component if introScenePanel is the Canvas itself
-                Canvas introCanvas = introScenePanel.GetComponent<Canvas>();
-                if (introCanvas != null)
-                {
-                    introCanvas.enabled = false;
-                    Debug.Log("OnPlayableDirectorStopped() - Disabled introScene Canvas component");
-                }
-                
-                // Also try to find and disable any Canvas parent
-                Canvas parentCanvas = introScenePanel.GetComponentInParent<Canvas>();
-                if (parentCanvas != null && parentCanvas.gameObject != introScenePanel)
-                {
-                    parentCanvas.gameObject.SetActive(false);
-                    Debug.Log($"OnPlayableDirectorStopped() - Disabled parent Canvas: {parentCanvas.gameObject.name}");
-                }
+                introCanvas.enabled = false;
             }
             
-            ShowMainMenu();
-            CheckForSaveFiles();
-            
-            // Intro was already marked as seen when it started, so no need to mark it again
-            Debug.Log("OnPlayableDirectorStopped() - Intro finished, showing main menu");
+            Canvas parentCanvas = introScenePanel.GetComponentInParent<Canvas>();
+            if (parentCanvas != null && parentCanvas.gameObject != introScenePanel)
+            {
+                parentCanvas.gameObject.SetActive(false);
+            }
         }
         
-        // CRITICAL: Immediately stop, disable, and unsubscribe to prevent ANY restart
+        ShowMainMenu();
+        CheckForSaveFiles();
+    }
+
+    private void OnPlayableDirectorStopped(PlayableDirector pd)
+    {
         if (pd != null)
         {
-            // Unsubscribe first to prevent recursive calls
             pd.stopped -= OnPlayableDirectorStopped;
-            
-            // Stop the director
             pd.Stop();
-            
-            // Disable the component entirely
             pd.enabled = false;
             
-            // Try to set wrap mode to None again using reflection
             var wrapModeProperty = typeof(PlayableDirector).GetProperty("wrapMode");
             if (wrapModeProperty != null)
             {
                 wrapModeProperty.SetValue(pd, DirectorWrapMode.None);
             }
-            
-            Debug.Log($"PlayableDirector disabled and stopped. Enabled: {pd.enabled}, State: {pd.state}");
         }
+        
+        bool completedNormally = maxTimeReached >= pd.duration - 0.1f || maxTimeReached >= 5.0;
+        
+        if (completedNormally)
+        {
+            HideIntroAndShowMainMenu();
+        }
+        else
+        {
+            if (gameObject.activeInHierarchy)
+            {
+                StartCoroutine(DelayedHideIntro());
+            }
+            else
+            {
+                HideIntroAndShowMainMenu();
+            }
+        }
+    }
+    
+    private IEnumerator DelayedHideIntro()
+    {
+        yield return null;
+        yield return null;
+        
+        if (!skipInProgress && isShowingIntro)
+        {
+            HideIntroAndShowMainMenu();
+        }
+    }
+    
+    private void HideIntroAndShowMainMenu()
+    {
+        isShowingIntro = false;
+        
+        if (introScenePanel != null)
+        {
+            introScenePanel.SetActive(false);
+            
+            Canvas introCanvas = introScenePanel.GetComponent<Canvas>();
+            if (introCanvas != null)
+            {
+                introCanvas.enabled = false;
+            }
+            
+            Canvas parentCanvas = introScenePanel.GetComponentInParent<Canvas>();
+            if (parentCanvas != null && parentCanvas.gameObject != introScenePanel)
+            {
+                parentCanvas.gameObject.SetActive(false);
+            }
+        }
+        
+        ShowMainMenu();
+        CheckForSaveFiles();
     }
 }
