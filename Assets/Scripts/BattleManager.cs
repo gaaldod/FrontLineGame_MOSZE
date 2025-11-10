@@ -23,6 +23,9 @@ public class BattleManager : MonoBehaviour
     private bool battleInProgress = false;
     private int currentTurn = 0;
 
+    // Per-turn reservation to avoid multiple units planning the same destination
+    private HashSet<Vector2Int> reservedTiles = new HashSet<Vector2Int>();
+
     // Hex map parameters (matching MapGenerator3D)
     private float hexSize = 1f;
     private float xOffset;
@@ -101,6 +104,13 @@ public class BattleManager : MonoBehaviour
         unitHexPositions.Clear();
         unitOwners.Clear();
 
+        // Clear occupancy - we'll set from actual units
+        foreach (var kvp in hexTileMap)
+        {
+            if (kvp.Value != null)
+                kvp.Value.isOccupied = false;
+        }
+
         Unit[] units = FindObjectsByType<Unit>(FindObjectsSortMode.None);
         foreach (Unit unit in units)
         {
@@ -109,6 +119,12 @@ public class BattleManager : MonoBehaviour
             allUnits.Add(unit);
             Vector2Int hexPos = WorldToHexCoord(unit.transform.position);
             unitHexPositions[unit] = hexPos;
+
+            // Mark tile occupied so GetValidNeighborTiles and other logic see it
+            if (hexTileMap.TryGetValue(hexPos, out HexTile tileAt))
+            {
+                tileAt.isOccupied = true;
+            }
 
             // Determine owner based on position and find closest tile
             int owner = DetermineUnitOwner(unit, hexPos);
@@ -347,6 +363,10 @@ public class BattleManager : MonoBehaviour
                 if (tile.CompareTag("Castle"))
                     continue;
 
+                // Skip if tile is already occupied or reserved this turn
+                if (tile.isOccupied || reservedTiles.Contains(neighbor))
+                    continue;
+
                 // Check if tile is occupied by checking actual world positions of units
                 bool occupiedByFriendly = false;
                 
@@ -405,13 +425,19 @@ public class BattleManager : MonoBehaviour
         
         if (allUnits.Count == 0)
         {
-            Debug.LogWarning("No units found! Place some units before starting the battle.");
+            DebugWarningNoUnits();
             return;
         }
         
         battleInProgress = true;
         currentTurn = 0;
         StartCoroutine(BattleLoop());
+    }
+
+    // extracted log call to keep code compact and avoid warnings in large file
+    void DebugWarningNoUnits()
+    {
+        Debug.LogWarning("No units found! Place some units before starting the battle.");
     }
 
     /// <summary>
@@ -425,6 +451,9 @@ public class BattleManager : MonoBehaviour
         {
             currentTurn++;
             Debug.Log($"\n--- Turn {currentTurn} ---");
+
+            // Clear per-turn reservations at the start of each turn
+            reservedTiles.Clear();
 
             // Check win conditions
             int winner = CheckWinCondition();
@@ -522,7 +551,7 @@ public class BattleManager : MonoBehaviour
             return;
         }
 
-        // Move toward target
+        // Move toward target using A*
         Vector2Int? nextHex = FindPathToTarget(currentHex, targetHex.Value, owner);
         if (nextHex.HasValue)
         {
@@ -573,92 +602,139 @@ public class BattleManager : MonoBehaviour
         return closestTarget;
     }
 
+    // Replaced greedy single-step pathfinder with A* search.
     Vector2Int? FindPathToTarget(Vector2Int from, Vector2Int to, int owner)
     {
-        List<HexTile> neighbors = GetValidNeighborTiles(from, owner);
-        
-        if (neighbors.Count == 0)
+        // If already at target, nothing to do
+        if (from == to) return null;
+
+        List<Vector2Int> path = AStarPath(from, to, owner);
+        if (path == null || path.Count < 2)
             return null;
 
-        // Improved pathfinding: prioritize moves that help reach the target row
-        HexTile bestTile = null;
-        float bestScore = float.MaxValue;
+        // path[0] == from, path[1] == next step
+        return path[1];
+    }
 
-        foreach (HexTile tile in neighbors)
+    // Basic A* over Vector2Int grid using GetHexNeighbors and current occupancy/reservations.
+    List<Vector2Int> AStarPath(Vector2Int start, Vector2Int goal, int owner)
+    {
+        // openSet contains nodes to evaluate
+        List<Vector2Int> openSet = new List<Vector2Int> { start };
+        HashSet<Vector2Int> closedSet = new HashSet<Vector2Int>();
+
+        Dictionary<Vector2Int, Vector2Int> cameFrom = new Dictionary<Vector2Int, Vector2Int>();
+
+        Dictionary<Vector2Int, int> gScore = new Dictionary<Vector2Int, int>();
+        gScore[start] = 0;
+
+        Dictionary<Vector2Int, float> fScore = new Dictionary<Vector2Int, float>();
+        fScore[start] = HexDistance(start, goal);
+
+        while (openSet.Count > 0)
         {
-            Vector2Int tileHex = WorldToHexCoord(tile.transform.position);
-            
-            // Double-check: Skip if occupied by friendly unit (check actual positions)
-            bool occupiedByFriendly = false;
-            foreach (Unit unit in allUnits)
+            // find node in openSet with lowest fScore
+            Vector2Int current = openSet[0];
+            float bestF = fScore.ContainsKey(current) ? fScore[current] : float.MaxValue;
+            for (int i = 1; i < openSet.Count; i++)
             {
-                if (unit == null || !unit.IsAlive())
+                Vector2Int n = openSet[i];
+                float fv = fScore.ContainsKey(n) ? fScore[n] : float.MaxValue;
+                if (fv < bestF)
+                {
+                    bestF = fv;
+                    current = n;
+                }
+            }
+
+            if (current == goal)
+                return ReconstructPath(cameFrom, current);
+
+            openSet.Remove(current);
+            closedSet.Add(current);
+
+            foreach (Vector2Int neighbor in GetHexNeighbors(current))
+            {
+                if (closedSet.Contains(neighbor)) continue;
+
+                // Determine passability:
+                // - If neighbor == goal: allow even if occupied by enemy
+                // - Otherwise, disallow if castle or occupied/reserved or occupied by friendly
+                if (!hexTileMap.TryGetValue(neighbor, out HexTile neighborTile))
                     continue;
-                
-                Vector2Int unitActualHex = WorldToHexCoord(unit.transform.position);
-                if (unitActualHex == tileHex && unitOwners[unit] == owner)
-                {
-                    occupiedByFriendly = true;
-                    break;
-                }
-            }
-            if (occupiedByFriendly) continue;
 
-            // Calculate distance to target
-            float dist = HexDistance(tileHex, to);
-            
-            // Special case: If unit is in bottom row (z=0) and target is in top row (z=1)
-            // Prioritize moving to odd columns (which can move up)
-            if (from.y == 0 && to.y == 1)
-            {
-                // If this neighbor is an odd column, give it a bonus (reduce score)
-                if (tileHex.x % 2 == 1)
-                {
-                    dist -= 0.5f; // Prefer odd columns
-                }
-                // If this neighbor is still in bottom row and even column, penalize it
-                else if (tileHex.y == 0 && tileHex.x % 2 == 0)
-                {
-                    dist += 1.0f; // Penalize staying in even bottom row
-                }
-            }
-            
-            // Special case: If unit is in top row (z=1) and target is in bottom row (z=0)
-            // Prioritize moving to even columns (which can move down)
-            if (from.y == 1 && to.y == 0)
-            {
-                // If this neighbor is an even column in top row, give it a bonus
-                if (tileHex.x % 2 == 0 && tileHex.y == 1)
-                {
-                    dist -= 0.5f; // Prefer even columns in top row
-                }
-                // If this neighbor is still in top row and odd column, penalize it slightly
-                else if (tileHex.y == 1 && tileHex.x % 2 == 1)
-                {
-                    dist += 0.5f; // Slight penalty for odd columns in top row
-                }
-            }
-            
-            // Prefer moves that reduce row distance
-            int rowDiffFrom = Mathf.Abs(from.y - to.y);
-            int rowDiffTo = Mathf.Abs(tileHex.y - to.y);
-            if (rowDiffTo < rowDiffFrom)
-            {
-                dist -= 0.3f; // Bonus for reducing row distance
-            }
-            else if (rowDiffTo > rowDiffFrom)
-            {
-                dist += 0.3f; // Penalty for increasing row distance
-            }
+                // treat castle as non-passable (attacking handled separately)
+                if (neighborTile.CompareTag("Castle") && neighbor != goal)
+                    continue;
 
-            if (dist < bestScore)
-            {
-                bestScore = dist;
-                bestTile = tile;
+                // Check occupancy/reservation
+                bool occupied = neighborTile.isOccupied;
+                bool reserved = reservedTiles.Contains(neighbor);
+
+                // If neighbor is goal, allow entering even if enemy-occupied (for combat)
+                if (neighbor != goal)
+                {
+                    if (occupied || reserved)
+                        continue;
+
+                    // Also skip if friendly unit is actually on that tile
+                    bool occupiedByFriendly = false;
+                    foreach (Unit u in allUnits)
+                    {
+                        if (u == null || !u.IsAlive()) continue;
+                        Vector2Int uHex = WorldToHexCoord(u.transform.position);
+                        if (uHex == neighbor && unitOwners.ContainsKey(u) && unitOwners[u] == owner)
+                        {
+                            occupiedByFriendly = true;
+                            break;
+                        }
+                    }
+                    if (occupiedByFriendly) continue;
+                }
+                else
+                {
+                    // If goal is occupied by friendly, abort path
+                    bool goalOccupiedByFriendly = false;
+                    foreach (Unit u in allUnits)
+                    {
+                        if (u == null || !u.IsAlive()) continue;
+                        Vector2Int uHex = WorldToHexCoord(u.transform.position);
+                        if (uHex == neighbor && unitOwners.ContainsKey(u) && unitOwners[u] == owner)
+                        {
+                            goalOccupiedByFriendly = true;
+                            break;
+                        }
+                    }
+                    if (goalOccupiedByFriendly) continue;
+                }
+
+                int tentativeG = (gScore.ContainsKey(current) ? gScore[current] : int.MaxValue/4) + 1;
+
+                if (!gScore.ContainsKey(neighbor) || tentativeG < gScore[neighbor])
+                {
+                    cameFrom[neighbor] = current;
+                    gScore[neighbor] = tentativeG;
+                    fScore[neighbor] = tentativeG + HexDistance(neighbor, goal);
+
+                    if (!openSet.Contains(neighbor))
+                        openSet.Add(neighbor);
+                }
             }
         }
 
-        return bestTile != null ? WorldToHexCoord(bestTile.transform.position) : null;
+        // no path found
+        return null;
+    }
+
+    List<Vector2Int> ReconstructPath(Dictionary<Vector2Int, Vector2Int> cameFrom, Vector2Int current)
+    {
+        List<Vector2Int> totalPath = new List<Vector2Int> { current };
+        while (cameFrom.ContainsKey(current))
+        {
+            current = cameFrom[current];
+            totalPath.Insert(0, current);
+        }
+        return totalPath;
     }
 
     float HexDistance(Vector2Int a, Vector2Int b)
@@ -677,30 +753,51 @@ public class BattleManager : MonoBehaviour
 
     void MoveUnit(Unit unit, Vector2Int fromHex, Vector2Int toHex)
     {
-        // Check if target tile is actually free (double-check with actual positions)
+        // Check if target tile is actually free (double-check with actual positions and reservations)
         bool tileIsFree = true;
-        foreach (Unit otherUnit in allUnits)
+
+        // If tile data exists, check isOccupied or reserved
+        HexTile toTile = null;
+        if (!hexTileMap.TryGetValue(toHex, out toTile))
         {
-            if (otherUnit == null || otherUnit == unit || !otherUnit.IsAlive())
-                continue;
-            
-            Vector2Int otherUnitHex = WorldToHexCoord(otherUnit.transform.position);
-            if (otherUnitHex == toHex)
+            tileIsFree = false;
+            Debug.LogWarning($"Cannot move unit to {toHex} - tile does not exist.");
+            return;
+        }
+
+        if (toTile.isOccupied || reservedTiles.Contains(toHex))
+        {
+            tileIsFree = false;
+            Debug.LogWarning($"Cannot move unit to {toHex} - tile already occupied or reserved.");
+        }
+        else
+        {
+            foreach (Unit otherUnit in allUnits)
             {
-                tileIsFree = false;
-                Debug.LogWarning($"Cannot move unit to {toHex} - tile is occupied by another unit");
-                break;
+                if (otherUnit == null || otherUnit == unit || !otherUnit.IsAlive())
+                    continue;
+                
+                Vector2Int otherUnitHex = WorldToHexCoord(otherUnit.transform.position);
+                if (otherUnitHex == toHex)
+                {
+                    tileIsFree = false;
+                    Debug.LogWarning($"Cannot move unit to {toHex} - tile is occupied by another unit");
+                    break;
+                }
             }
         }
         
         if (!tileIsFree)
             return; // Don't move if tile is occupied
         
+        // Reserve tile for this turn so subsequent units won't plan it
+        reservedTiles.Add(toHex);
+
         // Update tile occupancy
         if (hexTileMap.TryGetValue(fromHex, out HexTile fromTile))
             fromTile.isOccupied = false;
         
-        if (hexTileMap.TryGetValue(toHex, out HexTile toTile))
+        if (toTile != null)
             toTile.isOccupied = true;
 
         // Update unit position dictionary (will be verified next turn based on actual position)
