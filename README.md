@@ -54,7 +54,7 @@ A játék maximum **14 körig** tart. Egy kör:
 | Közelharcos  | 5       | változó | ...  | 1       |
 
 Egységstatisztikák:  
-`Assets/GameData/Units/units.json`
+`Assets/Prefabs/unit.prefab`
 
 ### Aranyrendszer
 - Kör elején: **15 pont**  
@@ -65,7 +65,7 @@ Egységstatisztikák:
 
 ## 4. Mentés és betöltés
 A mentés JSON formátumú:
-Assets/StreamingAssets/savegame.json
+`Assets/StreamingAssets/savegame.json`
 
 Mentett adatok:
 - kör  
@@ -78,9 +78,11 @@ Mentett adatok:
 ## 5. Assetek elérése (Unity – kötelező dokumentáció)
 
 ### Pálya / Labirintus
-Assets/Hexagons
-Assets/Prefabs
-Assets/Scenes
+`Assets/Hexagons`
+
+`Assets/Prefabs`
+
+`Assets/Scenes`
 
 A pálya **generált**
 Generálás logikája:  
@@ -88,7 +90,7 @@ Generálás logikája:
 
 
 ### Grafika / UI
-Assets/Hexagons
+`Assets/Hexagons`
 
 ---
 
@@ -105,7 +107,7 @@ Assets/Hexagons
 ---
 
 ## 7. Futtatás
-1. FrontlineV1.exe  
+`FrontlineV1.exe`
 
 ---
 
