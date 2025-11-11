@@ -21,7 +21,7 @@ A projekt Unity alapú. Ez a dokumentáció tartalmazza a játékmenet leírás�
 ---
 
 ## 1. Játékmenet összefoglaló
-A játék maximum **14 körig** tart. Egy kör:
+A játék maximum **14 körig** (SKELETON esetén vár elfoglalásig) tart. Egy kör:
 
 1. Pálya generálása  
 2. Egységelhelyezés (max. 20 pont)  
@@ -49,9 +49,9 @@ A játék maximum **14 körig** tart. Egy kör:
 ## 3. Játékszabályok
 
 ### Egységek
-| Típus        | Költség | Támadás | Élet | Hatótáv |
+| Típus        | Sebesség | Támadás | Élet | Akt. HP |
 |--------------|---------|---------|------|---------|
-| Közelharcos  | 5       | változó | 5  | 1   |
+| Közelharcos  |    3f    | 1 | 5  | változó |
 
 Egységstatisztikák:  
 `Assets/Scripts/Unit.cs`
