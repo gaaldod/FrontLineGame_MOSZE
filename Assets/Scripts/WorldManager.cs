@@ -139,6 +139,7 @@ public class WorldManager : MonoBehaviour
         allTiles = GameObject.FindObjectsByType<WorldHexTile>(FindObjectsSortMode.None);
     }
 
+    // apply pending load (from MainMenu) and pending battle result, then refresh UI
     private IEnumerator ApplyPendingAfterWorldLoad()
     {
         yield return null;
@@ -146,6 +147,45 @@ public class WorldManager : MonoBehaviour
 
         TryFindUI();
         TryRefreshTiles();
+
+        // If there's a pending save loaded from menu, apply it first
+        var pending = SaveManager.ConsumePendingLoad();
+        if (pending != null)
+        {
+            // apply gold
+            try
+            {
+                int left = pending.game_state?.attacker?.points_remaining ?? gold[0];
+                int right = pending.game_state?.defender?.points_remaining ?? gold[1];
+                SetGold(new int[] { left, right });
+            }
+            catch { /* swallow */ }
+
+            // apply tile ownership mapping
+            try
+            {
+                tileOwners.Clear();
+                if (pending.game_state?.map?.tiles != null)
+                {
+                    foreach (var te in pending.game_state.map.tiles)
+                    {
+                        if (te == null) continue;
+                        int owner = -1;
+                        if (!string.IsNullOrEmpty(te.owner))
+                        {
+                            if (te.owner.Equals("attacker", System.StringComparison.OrdinalIgnoreCase)) owner = 0;
+                            else if (te.owner.Equals("defender", System.StringComparison.OrdinalIgnoreCase)) owner = 1;
+                        }
+
+                        if (owner >= 0)
+                            tileOwners[(te.x, te.y)] = owner;
+                    }
+                }
+            }
+            catch { /* swallow */ }
+
+            Debug.Log("WorldManager: applied pending save data from SaveManager.");
+        }
 
         foreach (var t in allTiles)
         {
@@ -184,6 +224,18 @@ public class WorldManager : MonoBehaviour
                 tileOwners[(target.hexX, target.hexZ)] = pendingBattleWinner;
 
                 Debug.Log($"✅ Tile ({target.hexX},{target.hexZ}) ownership frissítve: {pendingBattleWinner}");
+
+                // Autosave the world state after applying the battle result
+                try
+                {
+                    bool saved = SaveManager.SaveWorldState();
+                    if (saved) Debug.Log("SaveManager: autosave created after applying battle result.");
+                    else Debug.LogWarning("SaveManager: autosave reported failure.");
+                }
+                catch (System.Exception ex)
+                {
+                    Debug.LogWarning($"SaveManager: exception while autosaving: {ex.Message}");
+                }
 
                 // Ha ez kastély és a bal játékos nyert -> Game Over
                 if (target.isCastleTile && pendingBattleWinner == 0)
