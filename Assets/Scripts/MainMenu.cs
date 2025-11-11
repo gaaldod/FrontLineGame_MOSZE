@@ -17,7 +17,7 @@ public class MainMenu : MonoBehaviour
     public Button savesButton;
 
     [Header("Save Settings")]
-    public string saveFolderName = "saves";
+    public string saveFolderName = "gamepath/saves";
     private string saveFolderPath;
     
     // Stores original button colors to restore when re-enabling
@@ -31,6 +31,17 @@ public class MainMenu : MonoBehaviour
         // Initialize save system and check for saves
         InitializeSaveSystem();
         CheckForSaveFiles();
+
+        // Wire up listeners for save-related buttons
+        if (continueButton != null)
+        {
+            continueButton.onClick.AddListener(ContinueGame);
+        }
+
+        if (savesButton != null)
+        {
+            savesButton.onClick.AddListener(OpenSavesFolderUI);
+        }
     }
 
     void InitializeSaveSystem()
@@ -67,7 +78,7 @@ public class MainMenu : MonoBehaviour
             return false;
 
         // Get all files in the save directory (you can modify this filter later)
-        string[] saveFiles = Directory.GetFiles(saveFolderPath, "*.save");
+        string[] saveFiles = Directory.GetFiles(saveFolderPath, "*.json");
         return saveFiles.Length > 0;
     }
 
@@ -101,8 +112,30 @@ public class MainMenu : MonoBehaviour
     // Your existing methods remain the same
     public void PlayGame()
     {
+        // Create an initial save (will create the folder if missing).
+        // Use sensible initial values; adjust round/maxRounds as needed.
+        SaveManager.SaveWorldState(round: 0, maxRounds: 14);
+
         SceneManager.LoadScene("WorldMapScene");
         //SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
+    }
+
+    // Called when Continue button is pressed
+    void ContinueGame()
+    {
+        bool loaded = SaveManager.LoadLatestSave();
+        if (!loaded)
+        {
+            Debug.LogWarning("MainMenu.ContinueGame: no save found, starting new game.");
+        }
+        // Load the world scene regardless; WorldManager consumes PendingLoad on scene load.
+        SceneManager.LoadScene("WorldMapScene");
+    }
+
+    // Called when Saves button is pressed - opens folder so user can pick a file externally
+    void OpenSavesFolderUI()
+    {
+        SaveManager.OpenSavesFolder();
     }
 
     public void QuitGame()
