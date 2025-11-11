@@ -38,12 +38,12 @@ public class WorldHexTile : MonoBehaviour
         // csak akkor reagálunk, ha ez kattintható tile
         if (manager.IsTileClickable(this))
         {
-            Debug.Log($"✅ Kattintottál egy ÉRVÉNYES tile-ra: {hexX},{hexZ}");
+            Debug.Log($"Kattintottál egy ÉRVÉNYES tile-ra: {hexX},{hexZ}");
 
             // ha ez egy vár tile, akkor automatikus győzelem következhet
             if (isCastleTile)
             {
-                Debug.Log("🏰 Kastély tile-ra kattintottál – automatikus Game Over logika aktiválódhat.");
+                Debug.Log("Kastély tile-ra kattintottál – automatikus Game Over logika aktiválódhat.");
             }
 
             // jelezzük a WorldManagernek, melyik tile-ról indul a csata
@@ -54,7 +54,7 @@ public class WorldHexTile : MonoBehaviour
         }
         else
         {
-            Debug.Log($"❌ Ez a tile nem kattintható ({hexX},{hexZ})");
+            Debug.Log($"Ez a tile nem kattintható ({hexX},{hexZ})");
         }
     }
 

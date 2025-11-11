@@ -19,7 +19,7 @@ public class HexMap3D : MonoBehaviour
     void GenerateMap()
     {
         float xOffset = hexSize * 0.5f;
-        float zOffset = hexSize * 1.73f; // kb. sqrt(3)
+        float zOffset = hexSize * 1.73f;
 
         height = height / 2;
         width = width * 2;

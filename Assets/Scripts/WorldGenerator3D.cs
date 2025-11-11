@@ -64,6 +64,6 @@ public class WorldHexMap3D : MonoBehaviour
             }
         }
 
-        Debug.Log($"✅ Hex map generálva: {width} x {height}");
+        Debug.Log($"Hex map generálva: {width} x {height}");
     }
 }
