@@ -110,5 +110,21 @@ A pályagenerálás logikája:
 
 ---
 
-## 8. Verzióinformációk
+## 8. How-to
+Ha a harcszimuláció nélkül szeretnénk lejátszani egy adott csatát, az alábbi parancsokkal átugorhatjuk:
+  **→** (jobbra nyíl) - jobb oldal (védő) nyer
+  **←** (balra nyíl) - bal oldal (támadó) nyer
+Legutoljára lehelyezett egység visszavonása: {space}
+###
+A játék elindítása a main world map-re visz minket, itt a bal oldali játékos a támadó, ő választhatja ki, melyik területet támadja, amellyel szomszédos területei vannak
+  {a játék kezdetekor ezek a felezővonaltól jobbra található közvetlen területek, ha a kurzort átmozgatjuk rajta, a highlight megmutatja a támadhatókat}
+###
+Egy adott csatán belül mindkét játékos lehelyezheti az egységeit a két oldalon található "Vásárolj Harcost Bal" és "Vásárolj Harcost Jobb" gombokkal.
+Az egységek lehelyezése után a Csata indítása gomb lenyomásával indul a harc szimuláció. Amennyiben a harcot a bal oldali játékos nyeri, elfoglalja a támadott területet.
+###
+Játék vége: A támadó (bal) játékos elfoglalja a védekező (jobb) játékos kastélyát.
+
+---
+
+## 9. Verzióinformációk
 - Játékverzió: 1.0 Alpha  
