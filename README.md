@@ -65,7 +65,7 @@ Egységstatisztikák:
 
 ## 4. Mentés és betöltés
 A mentés JSON formátumú:
-`Assets/StreamingAssets/savegame.json`
+`Users\USER\AppData\LocalLow\DefaultCompany\FrontLineGame\saves\saveyymmdd_hhmm`
 
 Mentett adatok:
 - kör  
