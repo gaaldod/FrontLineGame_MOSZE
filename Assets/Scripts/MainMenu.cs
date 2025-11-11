@@ -20,6 +20,10 @@ public class MainMenu : MonoBehaviour
     public string saveFolderName = "saves";
     private string saveFolderPath;
     
+    [Header("Demo Settings")]
+    // Set true to temporarily disable the saves button for demos
+    public bool disableSavesButtonInDemo = true;
+
     // Stores original button colors to restore when re-enabling
     private readonly Dictionary<Button, ColorBlock> originalButtonColors = new Dictionary<Button, ColorBlock>();
 
@@ -42,6 +46,15 @@ public class MainMenu : MonoBehaviour
         if (savesButton != null)
         {
             savesButton.onClick.AddListener(OpenSavesBrowserUI);
+        }
+
+        // DEMO: temporarily disable saves button so it can't be used during presentation
+        if (disableSavesButtonInDemo && savesButton != null)
+        {
+            savesButton.interactable = false;
+            SetButtonVisualState(savesButton, false);
+            savesButton.onClick.RemoveAllListeners();
+            Debug.Log("MainMenu: savesButton disabled for demo (disableSavesButtonInDemo=true)");
         }
     }
 
@@ -66,8 +79,10 @@ public class MainMenu : MonoBehaviour
 
         if (savesButton != null)
         {
-            savesButton.interactable = saveFilesExist;
-            SetButtonVisualState(savesButton, saveFilesExist);
+            // Respect demo override: if demo flag set, keep saves button disabled
+            bool allowSaves = !disableSavesButtonInDemo && saveFilesExist;
+            savesButton.interactable = allowSaves;
+            SetButtonVisualState(savesButton, allowSaves);
         }
 
         Debug.Log($"MainMenu.CheckForSaveFiles: Save files exist: {saveFilesExist}");
