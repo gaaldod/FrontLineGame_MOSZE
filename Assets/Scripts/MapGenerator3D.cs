@@ -1,12 +1,15 @@
-using UnityEngine;
+﻿using UnityEngine;
 
-public class MapGenerator3D : MonoBehaviour
+public class HexMap3D : MonoBehaviour
 {
-    public GameObject hexPrefab;
+    [Header("Prefabs")]
+    public GameObject groundHexPrefab;
+    public GameObject castleHexPrefab;
+
+    [Header("Map Settings")]
     public int width = 8;
-    public int height = 8; //currently 8x4 tiles per side
-    public float hexWidth = 1.0f;
-    public float hexHeight = 0.866f; // sqrt(3)/2 for spacing
+    public int height = 8;
+    public float hexSize = 1f;
 
     void Start()
     {
@@ -15,19 +18,45 @@ public class MapGenerator3D : MonoBehaviour
 
     void GenerateMap()
     {
+        float xOffset = hexSize * 0.5f;
+        float zOffset = hexSize * 1.73f;
+
+        height = height / 2;
+        width = width * 2;
+
         for (int x = 0; x < width; x++)
         {
-            for (int y = 0; y < height; y++)
+            for (int z = 0; z < height; z++)
             {
-                float xOffset = (y % 2 == 0) ? 0 : hexWidth / 2f;
-                float xPos = x * hexWidth + xOffset;
-                float zPos = y * hexHeight;
+                float xPos = x * xOffset;
+                float zPos = z * zOffset + (x % 2 == 1 ? zOffset / 2f : 0f);
+                Vector3 position = new Vector3(xPos, 0, zPos);
 
-                GameObject hex = Instantiate(hexPrefab, new Vector3(xPos, 0, zPos), Quaternion.identity);
-                hex.transform.parent = this.transform;
-                hex.name = $"Hex_{x}_{y}";
-                hex.GetComponent<Tile3D>().hexPosition = new Vector2Int(x, y);
+                GameObject tile;
+
+                // Kastely a jobb felso sarkba
+                if (x == width - 1 && z == height - 1)
+                {
+                    tile = Instantiate(castleHexPrefab, position, Quaternion.identity, transform);
+                    tile.tag = "Castle"; // fontos a GameManager miatt
+                }
+                else
+                {
+                    tile = Instantiate(groundHexPrefab, position, Quaternion.identity, transform);
+                }
+
+                // Layer beallitasa
+                if (x < width / 2)
+                    tile.layer = LayerMask.NameToLayer("LeftZone");
+                else
+                    tile.layer = LayerMask.NameToLayer("RightZone");
+
+                // HexTile komponens biztosítása
+                if (tile.GetComponent<HexTile>() == null)
+                    tile.AddComponent<HexTile>();
             }
         }
+
+        Debug.Log($"Hex map generalva: {width} x {height}");
     }
 }
