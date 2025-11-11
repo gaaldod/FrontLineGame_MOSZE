@@ -12,6 +12,7 @@ public class GameManager : MonoBehaviour
     public GameObject unitPrefab;
     public Button buyLeftButton;
     public Button buyRightButton;
+    public Button startBattleButton;
     public TMP_Text leftGoldText;
     public TMP_Text rightGoldText;
 
@@ -36,7 +37,7 @@ public class GameManager : MonoBehaviour
         if (WorldManager.Instance != null)
         {
             gold = (int[])WorldManager.Instance.GetGold().Clone();
-            Debug.Log($"💰 Átvett arany: Bal={gold[0]}, Jobb={gold[1]}");
+            Debug.Log($"Atvett arany: Bal={gold[0]}, Jobb={gold[1]}");
         }
         else
         {
@@ -46,10 +47,59 @@ public class GameManager : MonoBehaviour
 
         UpdateGoldUI();
 
+        Debug.Log($"Setting up buttons - buyLeftButton: {buyLeftButton != null}, buyRightButton: {buyRightButton != null}, startBattleButton: {startBattleButton != null}");
+
         if (buyLeftButton != null)
             buyLeftButton.onClick.AddListener(() => StartPlacingUnit(0));
         if (buyRightButton != null)
             buyRightButton.onClick.AddListener(() => StartPlacingUnit(1));
+        
+        // Try to find button if not assigned
+        if (startBattleButton == null)
+        {
+            Debug.LogWarning("startBattleButton not assigned, trying to find it by name...");
+            GameObject buttonObj = GameObject.Find("StartBattleButton");
+            if (buttonObj != null)
+            {
+                startBattleButton = buttonObj.GetComponent<Button>();
+                if (startBattleButton != null)
+                {
+                    Debug.Log("Found StartBattleButton and assigned it!");
+                }
+            }
+        }
+        
+        if (startBattleButton != null)
+        {
+            Debug.Log("Wiring up startBattleButton onClick listener");
+            startBattleButton.onClick.AddListener(StartBattle);
+            
+            // Verify button is interactable
+            if (!startBattleButton.interactable)
+            {
+                Debug.LogWarning("startBattleButton is not interactable! Enabling it...");
+                startBattleButton.interactable = true;
+            }
+        }
+        else
+        {
+            Debug.LogError("startBattleButton is NULL! Please assign it in the Inspector.");
+        }
+    }
+
+    public void StartBattle()
+    {
+        Debug.Log("GameManager.StartBattle() called - Button was clicked!");
+        
+        if (BattleManager.Instance != null)
+        {
+            BattleManager.Instance.StartBattle();
+            Debug.Log("Battle started!");
+        }
+        else
+        {
+            Debug.LogError("BattleManager not found! Make sure BattleManager component exists in the scene.");
+        }
     }
 
     void Update()
@@ -69,7 +119,7 @@ public class GameManager : MonoBehaviour
 
     public void EndGame(int winner)
     {
-        Debug.Log($"🎉 Játékos {winner + 1} NYERT!");
+        Debug.Log($"Jatekos {winner + 1} NYERT!");
         gold[winner] += 5;
 
         if (WorldManager.Instance != null)
@@ -81,6 +131,13 @@ public class GameManager : MonoBehaviour
         SceneManager.LoadScene("WorldMapScene");
     }
 
+    //SKELETON (GD) Public helper to read a player's current gold (avoiding softlocks)
+    public int GetGold(int player)
+    {
+        if (player < 0 || player >= gold.Length) return 0;
+        return gold[player];
+    }
+    //SKELETON(GD) END
     void CancelPlacingUnit()
     {
         if (!isPlacingUnit) return;
@@ -94,7 +151,7 @@ public class GameManager : MonoBehaviour
 
         if (gold[player] < unitCost)
         {
-            Debug.Log($"❌ Játékos {player + 1} nem engedheti meg magának a unitot!");
+            Debug.Log($"Jatekos {player + 1} nem engedheti meg maganak a unitot!");
             return;
         }
 
@@ -156,7 +213,7 @@ public class GameManager : MonoBehaviour
         isPlacingUnit = false;
         ghostUnit = null;
 
-        Debug.Log($"🪖 Játékos {activePlayer + 1} unitot helyezett le!");
+        Debug.Log($"Jatekos {activePlayer + 1} unitot helyezett le!");
     }
 
     void UpdateGoldUI()

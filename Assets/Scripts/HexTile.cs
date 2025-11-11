@@ -16,7 +16,7 @@ public class HexTile : MonoBehaviour
     void OnMouseEnter()
     {
         if (rend == null || isOccupied || !GameManager.Instance) return;
-        if (CompareTag("Castle")) return; // 🏰 ne highlightolja a kastélyt
+        if (CompareTag("Castle")) return; // ne highlightolja a kastelyt
 
         int activePlayer = GameManager.Instance.ActivePlayer;
 
