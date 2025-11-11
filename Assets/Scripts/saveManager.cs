@@ -5,7 +5,7 @@ using System.Linq;
 using UnityEngine;
 
 // Lightweight autosave helper that serializes world/gold/tile ownership into JSON.
-// Usage: SaveManager.SaveWorldState(); // writes to Application.persistentDataPath/gamepath/saves/saveYYMMDD.json
+// Usage: SaveManager.SaveWorldState(); // writes to Application.persistentDataPath/saves/saveYYMMDD_HHmm.json
 // You can pass round and maxRounds if you have them available.
 public static class SaveManager
 {
@@ -70,9 +70,11 @@ public static class SaveManager
     // and consumed by WorldManager when the world scene loads.
     public static SaveData PendingLoad { get; private set; } = null;
 
+    static string SaveFolder => Path.Combine(Application.persistentDataPath, "saves");
+
     // Public entry point: call from your end-of-battle logic.
     // If you omit round/maxRounds they'll be saved as -1.
-    // This method will write to: Application.persistentDataPath/gamepath/saves/saveYYMMDD.json
+    // This method will write to: Application.persistentDataPath/saves/saveYYMMDD_HHmm.json
     public static bool SaveWorldState(int round = -1, int maxRounds = -1)
     {
         try
@@ -147,13 +149,25 @@ public static class SaveManager
             // Serialize with Unity's JsonUtility (fields must be public)
             string json = JsonUtility.ToJson(save, true);
 
-            // Build target path: <persistentDataPath>/gamepath/saves/saveYYMMDD.json
-            string dateSuffix = DateTime.Now.ToString("yyMMdd"); // local date when player pressed new game
-            string relativeDir = Path.Combine("gamepath", "saves");
+            // Build target path: <persistentDataPath>/saves/saveYYMMDD_HHmm.json
+            string dateSuffix = DateTime.Now.ToString("yyMMdd_HHmm"); // local date when player pressed new game
             string fileName = $"save{dateSuffix}.json";
-            string dir = Path.Combine(Application.persistentDataPath, relativeDir);
+            string dir = SaveFolder;
+
+            Debug.Log($"SaveManager: persistentDataPath = {Application.persistentDataPath}");
+            Debug.Log($"SaveManager: target directory = {dir}");
+            Debug.Log($"SaveManager: target filename = {fileName}");
+
             if (!Directory.Exists(dir))
+            {
+                Debug.Log("SaveManager: directory does not exist, creating...");
                 Directory.CreateDirectory(dir);
+                Debug.Log("SaveManager: directory created");
+            }
+            else
+            {
+                Debug.Log("SaveManager: directory already exists");
+            }
 
             string path = Path.Combine(dir, fileName);
             File.WriteAllText(path, json);
@@ -174,7 +188,7 @@ public static class SaveManager
     {
         try
         {
-            string dir = Path.Combine(Application.persistentDataPath, "gamepath", "saves");
+            string dir = SaveFolder;
             if (!Directory.Exists(dir))
             {
                 Debug.LogWarning($"SaveManager.LoadLatestSave: save folder does not exist: {dir}");
@@ -190,17 +204,7 @@ public static class SaveManager
 
             // pick the most recently written file
             string latest = files.OrderByDescending(f => File.GetLastWriteTimeUtc(f)).First();
-            string json = File.ReadAllText(latest);
-            SaveData loaded = JsonUtility.FromJson<SaveData>(json);
-            if (loaded == null)
-            {
-                Debug.LogWarning($"SaveManager.LoadLatestSave: failed to deserialize {latest}");
-                return false;
-            }
-
-            PendingLoad = loaded;
-            Debug.Log($"SaveManager: loaded latest save from {latest}");
-            return true;
+            return LoadFromPath(latest);
         }
         catch (Exception ex)
         {
@@ -209,16 +213,75 @@ public static class SaveManager
         }
     }
 
+    // Load a specific save file by path and set PendingLoad
+    public static bool LoadFromPath(string path)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+            {
+                Debug.LogWarning($"SaveManager.LoadFromPath: invalid path: {path}");
+                return false;
+            }
+
+            string json = File.ReadAllText(path);
+            SaveData loaded = JsonUtility.FromJson<SaveData>(json);
+            if (loaded == null)
+            {
+                Debug.LogWarning($"SaveManager.LoadFromPath: failed to deserialize {path}");
+                return false;
+            }
+
+            PendingLoad = loaded;
+            Debug.Log($"SaveManager: loaded save from {path}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"SaveManager.LoadFromPath failed: {ex.Message}");
+            return false;
+        }
+    }
+
+    // Returns file paths (full) for save*.json sorted by last write desc
+    public static string[] GetSaveFiles()
+    {
+        try
+        {
+            string dir = SaveFolder;
+            Debug.Log($"SaveManager.GetSaveFiles: checking dir = {dir}");
+            if (!Directory.Exists(dir))
+            {
+                Debug.Log("SaveManager.GetSaveFiles: directory does not exist");
+                return Array.Empty<string>();
+            }
+
+            var files = Directory.GetFiles(dir, "save*.json")
+                                .OrderByDescending(f => File.GetLastWriteTimeUtc(f))
+                                .ToArray();
+
+            Debug.Log($"SaveManager.GetSaveFiles: found {files.Length} files");
+            for (int i = 0; i < files.Length; i++)
+                Debug.Log($"SaveManager.GetSaveFiles: [{i}] {files[i]}");
+
+            return files;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning($"SaveManager.GetSaveFiles failed: {ex.Message}");
+            return Array.Empty<string>();
+        }
+    }
+
     // Opens the saves folder in the system file explorer. Creates the directory if missing.
     public static void OpenSavesFolder()
     {
-        string dir = Path.Combine(Application.persistentDataPath, "gamepath", "saves");
+        string dir = SaveFolder;
         try
         {
             if (!Directory.Exists(dir))
                 Directory.CreateDirectory(dir);
 
-            // Use file:// URL to open folder across platforms
             string url = "file://" + dir.Replace("\\", "/");
             Application.OpenURL(url);
             Debug.Log($"SaveManager: opened saves folder: {dir}");
