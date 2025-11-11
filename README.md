@@ -106,7 +106,7 @@ A pályagenerálás logikája:
 ---
 
 ## 7. Futtatás
-`FrontlineV1.exe`
+`FrontLineGame.exe`
 
 ---
 
