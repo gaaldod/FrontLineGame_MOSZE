@@ -105,7 +105,7 @@ public class WorldHexTile : MonoBehaviour
     {
         if (raise && !isRaised)
         {
-            transform.position = originalPosition + Vector3.up * 0.2f;
+            transform.position = originalPosition + Vector3.up * 0.15f;
             isRaised = true;
             pulseCoroutine = StartCoroutine(PulseUpDown());
         }

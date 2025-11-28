@@ -11,6 +11,9 @@ public class Unit : MonoBehaviour
     public int currentHealth = 5;
     public int attackDamage = 1;
 
+    [Header("Range Settings")]
+    public int attackRange = 1;
+
     private UnitHealthBar healthBar;
 
     void Start()

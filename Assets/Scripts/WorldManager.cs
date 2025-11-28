@@ -44,6 +44,13 @@ public class WorldManager : MonoBehaviour
     private int pendingBattleHexZ = -999;
     private int pendingBattleWinner = -1;
 
+    // 0 = Attacker (Left), 1 = Defender (Right)
+    public int[] playerWins = new int[2];
+    public bool IsGameOver { get; private set; } = false;
+
+    // ÚJ KONSTANS
+    public const int MAX_DEFENDER_WINS = 7;
+
     void Start()
     {
         if (!goldInitialized)
@@ -76,8 +83,21 @@ public class WorldManager : MonoBehaviour
 
     public void RecordBattleResult(int winner)
     {
+        if (winner >= 0 && winner < playerWins.Length)
+        {
+            playerWins[winner]++;
+            Debug.Log($"Játékos {winner} nyert egy csatát! Állás: Támadó: {playerWins[0]} - Védő: {playerWins[1]}");
+        }
+
         pendingBattleWinner = winner;
         hasPendingBattle = true;
+
+        if (playerWins[1] >= MAX_DEFENDER_WINS)
+        {
+            Debug.Log("🛡️ A Védő sikeresen megvédte a várat 7 alkalommal! A Védő NYERT!");
+            IsGameOver = true;
+            StartCoroutine(HandleGameOver(1)); // 1 = Defender nyert
+        }
     }
 
     public bool IsTileClickable(WorldHexTile tile) => IsClickableTile(tile);
@@ -161,6 +181,20 @@ public class WorldManager : MonoBehaviour
             }
             catch { /* swallow */ }
 
+            // GYŐZELMEK VISSZATÖLTÉSE
+            if (pending.game_state != null)
+            {
+                IsGameOver = pending.game_state.is_game_over;
+
+                if (pending.game_state.attacker != null)
+                    playerWins[0] = pending.game_state.attacker.wins;
+
+                if (pending.game_state.defender != null)
+                    playerWins[1] = pending.game_state.defender.wins;
+
+                Debug.Log($"Betöltött állás: Támadó: {playerWins[0]}, Védő: {playerWins[1]}, Game Over: {IsGameOver}");
+            }
+
             // apply tile ownership mapping
             try
             {
@@ -241,7 +275,8 @@ public class WorldManager : MonoBehaviour
                 if (target.isCastleTile && pendingBattleWinner == 0)
                 {
                     Debug.Log("🏁 Game Over! A bal játékos elfoglalta a kastélyt és megnyerte a játékot!");
-                    StartCoroutine(HandleGameOver());
+                    IsGameOver = true;
+                    StartCoroutine(HandleGameOver(0));
                     yield break;
                 }
             }
@@ -254,15 +289,19 @@ public class WorldManager : MonoBehaviour
         pendingBattleWinner = -1;
     }
 
-    private IEnumerator HandleGameOver()
+    private IEnumerator HandleGameOver(int winner)
     {
+        string winnerName = (winner == 0) ? "TÁMADÓ (Bal)" : "VÉDŐ (Jobb)";
+        Debug.Log($"🏁 A JÁTÉK VÉGET ÉRT! Győztes: {winnerName}");
+
         yield return new WaitForSeconds(2f);
 
         // minden adat törlése
         tileOwners.Clear();
         goldInitialized = false;
         hasPendingBattle = false;
-
+        playerWins = new int[2];
+        IsGameOver = false;
         // WorldManager leiratkozik és megsemmisül
         SceneManager.sceneLoaded -= OnSceneLoaded;
         Instance = null;
