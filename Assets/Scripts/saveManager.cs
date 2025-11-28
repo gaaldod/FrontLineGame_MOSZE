@@ -29,6 +29,7 @@ public static class SaveManager
     {
         public int round;
         public int max_rounds;
+        public bool is_game_over;
         public PlayerState attacker;
         public PlayerState defender;
         public MapState map;
@@ -81,6 +82,8 @@ public static class SaveManager
         {
             // build save container
             SaveData save = new SaveData();
+
+            /*
             save.metadata = new Metadata
             {
                 version = "1.0",
@@ -94,6 +97,37 @@ public static class SaveManager
                 max_rounds = maxRounds,
                 attacker = new PlayerState { name = "Player1", points_remaining = 0, wins = 0 },
                 defender = new PlayerState { name = "Player2", points_remaining = 0, wins = 0 },
+                map = new MapState { width = 0, height = 0, tiles = new List<TileEntry>() },
+                battle_history = new List<BattleHistoryEntry>()
+            };
+            */
+
+            int attackerWins = 0;
+            int defenderWins = 0;
+            bool isGameOver = false;
+
+            // 2. Ha fut a játék (van WorldManager), akkor elkérjük tõle a TÉNYLEGES adatokat
+            if (WorldManager.Instance != null)
+            {
+                // A playerWins tömbbõl vesszük ki az adatokat (0: támadó, 1: védõ)
+                attackerWins = WorldManager.Instance.playerWins[0];
+                defenderWins = WorldManager.Instance.playerWins[1];
+
+                // Elkérjük, hogy vége van-e a játéknak
+                isGameOver = WorldManager.Instance.IsGameOver;
+            }
+
+            // 3. Létrehozzuk a mentési adatot, most már a VALÓDI számokkal
+            save.game_state = new GameState
+            {
+                round = round,
+                max_rounds = maxRounds,
+                is_game_over = isGameOver, // <--- Itt mentjük el, hogy vége van-e
+
+                // Itt használjuk fel a fenti változókat (attackerWins, defenderWins)
+                attacker = new PlayerState { name = "Player1", points_remaining = 0, wins = attackerWins },
+                defender = new PlayerState { name = "Player2", points_remaining = 0, wins = defenderWins },
+
                 map = new MapState { width = 0, height = 0, tiles = new List<TileEntry>() },
                 battle_history = new List<BattleHistoryEntry>()
             };
@@ -212,8 +246,47 @@ public static class SaveManager
             return false;
         }
     }
+    public static bool LoadFromPath(string path)
+    {
+        try
+        {
+            if (string.IsNullOrEmpty(path) || !File.Exists(path))
+            {
+                Debug.LogWarning($"SaveManager.LoadFromPath: invalid path: {path}");
+                return false;
+            }
+
+            string json = File.ReadAllText(path);
+            SaveData loaded = JsonUtility.FromJson<SaveData>(json);
+
+            if (loaded == null)
+            {
+                Debug.LogWarning($"SaveManager.LoadFromPath: failed to deserialize {path}");
+                return false;
+            }
+
+            // Ha a betöltött játékban Game Over van, akkor NEM töltjük be a PendingLoad-ba.
+            // Így a WorldManager null-t lát majd, és tiszta új játékot indít.
+            if (loaded.game_state != null && loaded.game_state.is_game_over)
+            {
+                Debug.Log($"SaveManager: A mentés ({path}) egy befejezett játékot tartalmaz. Nem töltjük be, hogy Új Játék indulhasson.");
+                PendingLoad = null; // Biztosítjuk, hogy üres legyen
+                return false;       // False-t adunk vissza, jelezve, hogy nem történt "folytatás"
+            }
+
+            PendingLoad = loaded;
+            Debug.Log($"SaveManager: loaded save from {path}");
+            return true;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogError($"SaveManager.LoadFromPath failed: {ex.Message}");
+            return false;
+        }
+    }
 
     // Load a specific save file by path and set PendingLoad
+    /*
     public static bool LoadFromPath(string path)
     {
         try
@@ -242,6 +315,7 @@ public static class SaveManager
             return false;
         }
     }
+    */
 
     // Returns file paths (full) for save*.json sorted by last write desc
     public static string[] GetSaveFiles()
