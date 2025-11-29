@@ -224,8 +224,8 @@ public class GameManager : MonoBehaviour
 
     void UpdateGoldUI()
     {
-        if (leftGoldText != null) leftGoldText.text = $"Arany: {gold[0]}";
-        if (rightGoldText != null) rightGoldText.text = $"Arany: {gold[1]}";
+        if (leftGoldText != null) leftGoldText.text = $"{gold[0]}";
+        if (rightGoldText != null) rightGoldText.text = $"{gold[1]}";
     }
 
     void SetTransparency(GameObject obj, float alpha)
