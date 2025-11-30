@@ -13,6 +13,7 @@ public class MainMenu : MonoBehaviour
     public GameObject mainMenuPanel;
     public GameObject settingsPanel;
     public GameObject introScenePanel;
+    public GameObject saveBrowser;
 
     [Header("Save-related Buttons")]
     public Button continueButton;
@@ -22,9 +23,6 @@ public class MainMenu : MonoBehaviour
     public string saveFolderName = "saves";
     private string saveFolderPath;
     
-    [Header("Demo Settings")]
-    // Set true to temporarily disable the saves button for demos
-    public bool disableSavesButtonInDemo = true;
     [Header("Skip Intro Settings")]
     [Tooltip("The key to press to skip the intro")]
     public KeyCode skipKey = KeyCode.Space;
@@ -70,14 +68,6 @@ public class MainMenu : MonoBehaviour
             savesButton.onClick.AddListener(OpenSavesBrowserUI);
         }
 
-        // DEMO: temporarily disable saves button so it can't be used during presentation
-        if (disableSavesButtonInDemo && savesButton != null)
-        {
-            savesButton.interactable = false;
-            SetButtonVisualState(savesButton, false);
-            savesButton.onClick.RemoveAllListeners();
-            Debug.Log("MainMenu: savesButton disabled for demo (disableSavesButtonInDemo=true)");
-        }
         // Initialize save system first so we can decide whether to show the intro
         InitializeSaveSystem();
 
@@ -206,10 +196,8 @@ public class MainMenu : MonoBehaviour
 
         if (savesButton != null)
         {
-            // Respect demo override: if demo flag set, keep saves button disabled
-            bool allowSaves = !disableSavesButtonInDemo && saveFilesExist;
-            savesButton.interactable = allowSaves;
-            SetButtonVisualState(savesButton, allowSaves);
+            savesButton.interactable = true;
+            SetButtonVisualState(savesButton, true);
         }
 
         Debug.Log($"MainMenu.CheckForSaveFiles: Save files exist: {saveFilesExist}");
@@ -273,7 +261,7 @@ public class MainMenu : MonoBehaviour
     {
         // Create an initial save (will create the folder if missing).
         // Use sensible initial values; adjust round/maxRounds as needed.
-        bool ok = SaveManager.SaveWorldState(round: 0, maxRounds: 14);
+        bool ok = SaveManager.SaveWorldState(round: 0, maxRounds: 10);
         Debug.Log($"MainMenu.PlayGame: SaveManager.SaveWorldState returned: {ok}. persistentDataPath: {Application.persistentDataPath}");
 
         SceneManager.LoadScene("WorldMapScene");
@@ -295,7 +283,10 @@ public class MainMenu : MonoBehaviour
     // Called when Saves button is pressed - open in-game browser
     void OpenSavesBrowserUI()
     {
-        SaveBrowser.Open();
+            if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
+            if (settingsPanel != null) settingsPanel.SetActive(false);
+            if (settingsPanel != null) settingsPanel.SetActive(false);
+            if (saveBrowser != null) saveBrowser.SetActive(true);
     }
 
     public void QuitGame()
@@ -309,6 +300,7 @@ public class MainMenu : MonoBehaviour
         if (introScenePanel != null) introScenePanel.SetActive(false);
         if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
         if (settingsPanel != null) settingsPanel.SetActive(true);
+        if (saveBrowser != null) saveBrowser.SetActive(false);
     }
 
     public void ShowIntroScene()
@@ -316,6 +308,7 @@ public class MainMenu : MonoBehaviour
         if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
         if (settingsPanel != null) settingsPanel.SetActive(false);
         if (introScenePanel != null) introScenePanel.SetActive(true);
+        if (saveBrowser != null) saveBrowser.SetActive(false);
     }
 
     public void ShowMainMenu()
@@ -344,7 +337,9 @@ public class MainMenu : MonoBehaviour
                 Debug.Log($"ShowMainMenu() - Disabled introScene parent Canvas: {parentIntroCanvas.gameObject.name}");
             }
         }
-        
+
+        if (saveBrowser != null) saveBrowser.SetActive(false);
+
         if (settingsPanel != null) 
         {
             settingsPanel.SetActive(false);
@@ -424,6 +419,8 @@ public class MainMenu : MonoBehaviour
 
         if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
         if (settingsPanel != null) settingsPanel.SetActive(false);
+        if (saveBrowser != null) saveBrowser.SetActive(false);
+        if (saveBrowser != null) saveBrowser.SetActive(false);
 
         if (introScenePanel == null)
         {

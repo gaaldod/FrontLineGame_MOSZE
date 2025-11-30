@@ -114,7 +114,15 @@ public class GameManager : MonoBehaviour
     public void EndGame(int winner)
     {
         Debug.Log($"Jatekos {winner + 1} NYERT!");
-        gold[winner] += 5;
+
+        // Kiszámoljuk, ki a vesztes (ha winner 0, akkor loser 1, és fordítva)
+        int loser = (winner == 0) ? 1 : 0;
+
+        // Nyertes kap 4 aranyat
+        gold[winner] += 4;
+
+        // Vesztes kap 7 aranyat
+        gold[loser] += 7;
 
         if (WorldManager.Instance != null)
         {
