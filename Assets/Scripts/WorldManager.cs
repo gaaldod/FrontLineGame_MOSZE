@@ -48,7 +48,8 @@ public class WorldManager : MonoBehaviour
     public int[] playerWins = new int[2];
     public bool IsGameOver { get; private set; } = false;
 
-    // ÚJ KONSTANS
+    public int currentRound = 0;
+    public const int MAX_ROUNDS = 10;
     public const int MAX_DEFENDER_WINS = 7;
 
     void Start()
@@ -94,12 +95,34 @@ public class WorldManager : MonoBehaviour
 
         if (playerWins[1] >= MAX_DEFENDER_WINS)
         {
-            Debug.Log("🛡️ A Védő sikeresen megvédte a várat 7 alkalommal! A Védő NYERT!");
+            Debug.Log("A Védő sikeresen megvédte a várat 7 alkalommal! A Védő NYERT!");
             IsGameOver = true;
-            StartCoroutine(HandleGameOver(1)); // 1 = Defender nyert
+            StartCoroutine(HandleGameOver(1));
+            return;
+        }
+
+        // 4. Ellenőrzés: Elértük-e a 10. kört?
+        if (currentRound >= MAX_ROUNDS)
+        {
+            Debug.Log("⏳ Letelt a 10 kör! Győztes hirdetése...");
+            int finalWinner;
+
+            if (playerWins[0] > playerWins[1])
+            {
+                // Ha a támadónak több pontja van
+                Debug.Log($"A Támadó nyert több csatát ({playerWins[0]} vs {playerWins[1]}).");
+                finalWinner = 0;
+            }
+            else
+            {
+                // Ha a védőnek több van, VAGY döntetlen (a szabály szerint döntetlennél a védő nyer)
+                Debug.Log($"A Védő nyert (vagy döntetlen) ({playerWins[1]} vs {playerWins[0]}).");
+                finalWinner = 1;
+            }
+            IsGameOver = true;
+            StartCoroutine(HandleGameOver(finalWinner));
         }
     }
-
     public bool IsTileClickable(WorldHexTile tile) => IsClickableTile(tile);
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -257,12 +280,12 @@ public class WorldManager : MonoBehaviour
                 target.ResetColor();
                 tileOwners[(target.hexX, target.hexZ)] = pendingBattleWinner;
 
-                Debug.Log($"✅ Tile ({target.hexX},{target.hexZ}) ownership frissítve: {pendingBattleWinner}");
+                Debug.Log($"Tile ({target.hexX},{target.hexZ}) ownership frissítve: {pendingBattleWinner}");
 
                 // Autosave the world state after applying the battle result
                 try
                 {
-                    bool saved = SaveManager.SaveWorldState();
+                    bool saved = SaveManager.SaveWorldState(currentRound, MAX_ROUNDS);
                     if (saved) Debug.Log("SaveManager: autosave created after applying battle result.");
                     else Debug.LogWarning("SaveManager: autosave reported failure.");
                 }
