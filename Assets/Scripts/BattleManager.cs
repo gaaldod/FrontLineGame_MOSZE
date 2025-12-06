@@ -941,6 +941,9 @@ public class BattleManager : MonoBehaviour
         int damage = attacker.attackDamage;
         Debug.Log($"Unit at {unitHexPositions[attacker]} attacks unit at {unitHexPositions[defender]} for {damage} damage");
         
+        // Play attack animation
+        attacker.PlayAttackAnimation();
+        
         defender.TakeDamage(damage);
         
         // If defender died, clean it up
