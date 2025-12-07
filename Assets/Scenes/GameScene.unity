@@ -913,7 +913,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d72012929695d254fb5b87051c3f871d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  unitPrefab: {fileID: 7374579278287907348, guid: f146cbcb9cd42c34cab46ffe9aa918e6, type: 3}
+  unitPrefab: {fileID: 100000, guid: a6e39ced0ea046bcb636c3f0b2e2a745, type: 3}
   unitCost: 5
   buyLeftButton: {fileID: 36005920}
   buyRightButton: {fileID: 648848491}
@@ -958,6 +958,8 @@ MonoBehaviour:
   unitMoveSpeed: 5
   maxTurns: 100
   mapGenerator: {fileID: 439256733}
+  arrowPrefab: {fileID: 0}
+  arrowSpeed: 10
 --- !u!224 &700084737
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1769,6 +1771,63 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1001 &1235568270
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: -8679921383154817045, guid: d9528b82a18b5ad4fbb7cd47da3f0893, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d9528b82a18b5ad4fbb7cd47da3f0893, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d9528b82a18b5ad4fbb7cd47da3f0893, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d9528b82a18b5ad4fbb7cd47da3f0893, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d9528b82a18b5ad4fbb7cd47da3f0893, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d9528b82a18b5ad4fbb7cd47da3f0893, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d9528b82a18b5ad4fbb7cd47da3f0893, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d9528b82a18b5ad4fbb7cd47da3f0893, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d9528b82a18b5ad4fbb7cd47da3f0893, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: d9528b82a18b5ad4fbb7cd47da3f0893, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: d9528b82a18b5ad4fbb7cd47da3f0893, type: 3}
+      propertyPath: m_Name
+      value: medieval+knight+3d+model
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: d9528b82a18b5ad4fbb7cd47da3f0893, type: 3}
 --- !u!1 &1437851837
 GameObject:
   m_ObjectHideFlags: 0
@@ -2672,3 +2731,4 @@ SceneRoots:
   - {fileID: 1002562679}
   - {fileID: 1230222464}
   - {fileID: 2146303624}
+  - {fileID: 1235568270}

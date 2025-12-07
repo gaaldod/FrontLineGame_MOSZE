@@ -47,6 +47,23 @@ public class Unit : MonoBehaviour
             // Set facing direction based on owner
             SetFacingDirection();
         }
+        else
+        {
+            // For units without a model prefab, try to find animator on this GameObject
+            unitAnimator = GetComponent<Animator>();
+            if (unitAnimator == null)
+            {
+                unitAnimator = GetComponentInChildren<Animator>();
+            }
+            
+            // If animator controller is assigned but no animator component exists, add one
+            if (animatorController != null && unitAnimator == null)
+            {
+                unitAnimator = gameObject.AddComponent<Animator>();
+                unitAnimator.runtimeAnimatorController = animatorController;
+                Debug.Log($"Unit {gameObject.name}: Added Animator component and assigned controller");
+            }
+        }
         
         // Create healthbar
         CreateHealthBar();
@@ -100,9 +117,14 @@ public class Unit : MonoBehaviour
         {
             unitAnimator.runtimeAnimatorController = animatorController;
         }
-        
-        // If model has animations but no controller, try to use them
-        // The FBX should have animations that can be accessed
+        else if (unitAnimator != null && unitAnimator.runtimeAnimatorController == null)
+        {
+            // Only warn if this is an archer unit (has model prefab but no controller)
+            if (attackRange > 1)
+            {
+                Debug.LogWarning($"Unit {gameObject.name}: Archer unit has no Animator Controller assigned");
+            }
+        }
     }
     
     void SetFacingDirection()
@@ -184,13 +206,21 @@ public class Unit : MonoBehaviour
     
     public void PlayAttackAnimation()
     {
-        if (unitAnimator != null)
+        // Silently return if no animator - some units (like melee) don't have animations
+        if (unitAnimator == null)
         {
-            // Try common attack animation parameter names
-            if (HasAnimatorParameter("Attack"))
-                unitAnimator.SetTrigger("Attack");
-            if (HasAnimatorParameter("IsAttacking"))
-                unitAnimator.SetBool("IsAttacking", true);
+            return;
+        }
+        
+        if (unitAnimator.runtimeAnimatorController == null)
+        {
+            return;
+        }
+        
+        // Try common attack animation parameter names
+        if (HasAnimatorParameter("Attack"))
+        {
+            unitAnimator.SetTrigger("Attack");
         }
     }
 

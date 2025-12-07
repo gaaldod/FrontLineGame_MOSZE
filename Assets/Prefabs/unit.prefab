@@ -123,3 +123,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   moveSpeed: 3
   targetPosition: {x: 0, y: 0, z: 0}
+  maxHealth: 5
+  currentHealth: 5
+  attackDamage: 1
+  attackRange: 1
+  unitModelPrefab: {fileID: 919132149155446097, guid: d9528b82a18b5ad4fbb7cd47da3f0893, type: 3}
+  animatorController: {fileID: 0}
