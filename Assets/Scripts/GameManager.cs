@@ -221,7 +221,14 @@ public class GameManager : MonoBehaviour
         tile.isOccupied = true;
 
         // A KIVÁLASZTOTT unitot rakjuk le (Archer vagy Sword)
-        Instantiate(selectedUnitPrefab, tile.transform.position + Vector3.up * 0.25f, Quaternion.identity);
+        GameObject newUnit = Instantiate(selectedUnitPrefab, tile.transform.position + Vector3.up * 0.25f, Quaternion.identity);
+        
+        // Set the unit's owner directly (no need for raycast detection)
+        Unit unitComponent = newUnit.GetComponent<Unit>();
+        if (unitComponent != null)
+        {
+            unitComponent.SetOwner(activePlayer);
+        }
 
         Destroy(ghostUnit);
         isPlacingUnit = false;

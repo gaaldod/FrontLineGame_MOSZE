@@ -24,14 +24,29 @@ public class Unit : MonoBehaviour
     private GameObject instantiatedModel;
     private Animator unitAnimator;
     private int unitOwner = -1; // 0 = left, 1 = right, -1 = not determined
+    
+    // Public method to set the unit owner directly (called by GameManager when placing units)
+    public void SetOwner(int owner)
+    {
+        unitOwner = owner;
+        // If model is already instantiated, update facing direction
+        if (instantiatedModel != null)
+        {
+            SetFacingDirection();
+        }
+    }
 
     void Start()
     {
         targetPosition = transform.position;
         currentHealth = maxHealth;
         
-        // Determine unit owner based on position/layer
-        DetermineUnitOwner();
+        // Only determine unit owner if not already set (for units placed in battle scene)
+        // Units placed in GameManager will have owner set via SetOwner() method
+        if (unitOwner == -1)
+        {
+            DetermineUnitOwner();
+        }
         
         // Instantiate model if provided (for archer units and melee units)
         // Model prefab is OPTIONAL - if null or invalid, unit will work without a visual model
@@ -67,24 +82,36 @@ public class Unit : MonoBehaviour
         int leftLayer = LayerMask.NameToLayer("LeftZone");
         int rightLayer = LayerMask.NameToLayer("RightZone");
         
-        // Raycast down to find the tile
-        if (Physics.Raycast(transform.position + Vector3.up * 0.5f, Vector3.down, out RaycastHit hit, 2f))
+        // Raycast down to find the tile - try with a longer distance and from higher up
+        if (Physics.Raycast(transform.position + Vector3.up * 1f, Vector3.down, out RaycastHit hit, 5f))
         {
             if (hit.collider.gameObject.layer == leftLayer)
             {
                 unitOwner = 0; // Left player
+                Debug.Log($"Unit {gameObject.name}: Determined as LEFT player (layer check), position: {transform.position}, hit: {hit.collider.name}");
                 return;
             }
             else if (hit.collider.gameObject.layer == rightLayer)
             {
                 unitOwner = 1; // Right player
+                Debug.Log($"Unit {gameObject.name}: Determined as RIGHT player (layer check), position: {transform.position}, hit: {hit.collider.name}");
                 return;
             }
+            else
+            {
+                Debug.LogWarning($"Unit {gameObject.name}: Raycast hit something but layer is {hit.collider.gameObject.layer} (LeftZone={leftLayer}, RightZone={rightLayer}), hit: {hit.collider.name}");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"Unit {gameObject.name}: Raycast failed, no hit found. Position: {transform.position}");
         }
         
         // Fallback: use position (left side of map = left player)
-        // Assuming map center is around x=0, left is negative, right is positive
-        unitOwner = transform.position.x < 0 ? 0 : 1;
+        // Assuming map center is around x=0, left is negative or zero, right is positive
+        // Use <= 0 for left to handle x=0 case
+        unitOwner = transform.position.x <= 0 ? 0 : 1;
+        Debug.Log($"Unit {gameObject.name}: Determined as {(unitOwner == 0 ? "LEFT" : "RIGHT")} player (position fallback), position: {transform.position}, x: {transform.position.x}");
     }
     
     void SetupAnimator()
@@ -123,11 +150,13 @@ public class Unit : MonoBehaviour
         {
             // Left player: face right (positive X direction) = 90 degrees
             yRotation = 90f;
+            Debug.Log($"Unit {gameObject.name}: Left player (owner {unitOwner}), setting rotation to {yRotation}");
         }
         else
         {
             // Right player: face left (negative X direction) = 270 degrees (or -90)
             yRotation = 270f;
+            Debug.Log($"Unit {gameObject.name}: Right player (owner {unitOwner}), setting rotation to {yRotation}");
         }
         instantiatedModel.transform.localRotation = Quaternion.Euler(0, yRotation, 0);
     }
