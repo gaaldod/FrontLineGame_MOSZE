@@ -33,35 +33,27 @@ public class Unit : MonoBehaviour
         // Determine unit owner based on position/layer
         DetermineUnitOwner();
         
-        // Instantiate model if provided (for archer units)
+        // Instantiate model if provided (for archer units and melee units)
+        // Model prefab is OPTIONAL - if null or invalid, unit will work without a visual model
         if (unitModelPrefab != null)
         {
+            // Debug: Check what we're instantiating
+            Debug.Log($"Unit {gameObject.name}: Instantiating model prefab: {unitModelPrefab.name}");
+            
             instantiatedModel = Instantiate(unitModelPrefab, transform);
             instantiatedModel.transform.localPosition = Vector3.zero;
             instantiatedModel.transform.localRotation = Quaternion.identity;
             instantiatedModel.transform.localScale = Vector3.one;
             
-            // Set up Animator
-            SetupAnimator();
+            // Check if the instantiated model IS a TextMeshPro (wrong prefab assigned or wrong fileID)
+            TMPro.TextMeshPro rootText = instantiatedModel.GetComponent<TMPro.TextMeshPro>();
+            Renderer meshRenderer = instantiatedModel.GetComponent<Renderer>();
             
-            // Set facing direction based on owner
-            SetFacingDirection();
-        }
-        else
-        {
-            // For units without a model prefab, try to find animator on this GameObject
-            unitAnimator = GetComponent<Animator>();
-            if (unitAnimator == null)
+            // Set up Animator only if we have a valid model
+            if (instantiatedModel != null)
             {
-                unitAnimator = GetComponentInChildren<Animator>();
-            }
-            
-            // If animator controller is assigned but no animator component exists, add one
-            if (animatorController != null && unitAnimator == null)
-            {
-                unitAnimator = gameObject.AddComponent<Animator>();
-                unitAnimator.runtimeAnimatorController = animatorController;
-                Debug.Log($"Unit {gameObject.name}: Added Animator component and assigned controller");
+                SetupAnimator();
+                SetFacingDirection();
             }
         }
         
@@ -117,14 +109,7 @@ public class Unit : MonoBehaviour
         {
             unitAnimator.runtimeAnimatorController = animatorController;
         }
-        else if (unitAnimator != null && unitAnimator.runtimeAnimatorController == null)
-        {
-            // Only warn if this is an archer unit (has model prefab but no controller)
-            if (attackRange > 1)
-            {
-                Debug.LogWarning($"Unit {gameObject.name}: Archer unit has no Animator Controller assigned");
-            }
-        }
+
     }
     
     void SetFacingDirection()
@@ -132,9 +117,18 @@ public class Unit : MonoBehaviour
         if (instantiatedModel == null) return;
         
         // Left side (player 0) faces right toward enemy, Right side (player 1) faces left toward enemy
-        // Adjust Y rotation based on owner, then subtract 90 degrees so they face each other
-        float baseRotation = (unitOwner == 0) ? 180f : 0f;
-        float yRotation = baseRotation - 90f;
+        // In Unity: 0 = forward (Z+), 90 = right (X+), 180 = back (Z-), 270 = left (X-)
+        float yRotation;
+        if (unitOwner == 0)
+        {
+            // Left player: face right (positive X direction) = 90 degrees
+            yRotation = 90f;
+        }
+        else
+        {
+            // Right player: face left (negative X direction) = 270 degrees (or -90)
+            yRotation = 270f;
+        }
         instantiatedModel.transform.localRotation = Quaternion.Euler(0, yRotation, 0);
     }
 
@@ -206,21 +200,13 @@ public class Unit : MonoBehaviour
     
     public void PlayAttackAnimation()
     {
-        // Silently return if no animator - some units (like melee) don't have animations
-        if (unitAnimator == null)
+        if (unitAnimator != null)
         {
-            return;
-        }
-        
-        if (unitAnimator.runtimeAnimatorController == null)
-        {
-            return;
-        }
-        
-        // Try common attack animation parameter names
-        if (HasAnimatorParameter("Attack"))
-        {
-            unitAnimator.SetTrigger("Attack");
+            // Try common attack animation parameter names
+            if (HasAnimatorParameter("Attack"))
+                unitAnimator.SetTrigger("Attack");
+            if (HasAnimatorParameter("IsAttacking"))
+                unitAnimator.SetBool("IsAttacking", true);
         }
     }
 

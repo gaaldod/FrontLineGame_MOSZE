@@ -42,7 +42,7 @@ MeshFilter:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7374579278287907348}
-  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  m_Mesh: {fileID: 0}
 --- !u!23 &803687031972425154
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -50,7 +50,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7374579278287907348}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -127,5 +127,5 @@ MonoBehaviour:
   currentHealth: 5
   attackDamage: 1
   attackRange: 1
-  unitModelPrefab: {fileID: 919132149155446097, guid: d9528b82a18b5ad4fbb7cd47da3f0893, type: 3}
+  unitModelPrefab: {fileID: 919132149155446097, guid: 890deb678901d1744a6c41c359718b22, type: 3}
   animatorController: {fileID: 0}

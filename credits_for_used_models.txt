@@ -1,11 +1,5 @@
-base blue: 000fff
-base green: 047905
-dark blue: #00146a
-light blue: #2b52fe
-base skin: #cfa86f
-dark skin:#b18a51
-
 credits: 
+"Knight With Sword & Shield" (https://skfb.ly/6XqHU) by MoonBaby2402 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 "Low-Poly Arrow v2.0" (https://skfb.ly/oLS6V) by Teslov is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 "Hawley the Archer" (https://skfb.ly/6QWvE) by outcast945 is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 
