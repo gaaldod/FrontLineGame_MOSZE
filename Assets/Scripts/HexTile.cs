@@ -1,4 +1,5 @@
 ﻿using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class HexTile : MonoBehaviour
 {
@@ -15,6 +16,11 @@ public class HexTile : MonoBehaviour
 
     void OnMouseEnter()
     {
+        if (EventSystem.current.IsPointerOverGameObject())
+        {
+            return;
+        }
+
         if (rend == null || isOccupied || !GameManager.Instance) return;
         if (CompareTag("Castle")) return; // ne highlightolja a kastelyt
 
@@ -42,6 +48,11 @@ public class HexTile : MonoBehaviour
 
     void OnMouseDown()
     {
+        if (EventSystem.current.IsPointerOverGameObject())
+        {
+            return;
+        }
+
         if (!isOccupied && GameManager.Instance != null)
         {
             GameManager.Instance.TryPlaceUnit(this);

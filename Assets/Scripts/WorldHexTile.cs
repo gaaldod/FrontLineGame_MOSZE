@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 
 public class WorldHexTile : MonoBehaviour
 {
@@ -28,6 +29,11 @@ public class WorldHexTile : MonoBehaviour
 
     void OnMouseDown()
     {
+        if (EventSystem.current.IsPointerOverGameObject())
+        {
+            return;
+        }
+
         if (WorldManager.Instance == null) return;
         if (WorldManager.Instance.gameObject == null) return;
 
@@ -60,6 +66,11 @@ public class WorldHexTile : MonoBehaviour
 
     void OnMouseEnter()
     {
+        if (EventSystem.current.IsPointerOverGameObject())
+        {
+            return;
+        }
+
         if (rend == null || WorldManager.Instance == null) return;
 
         bool isClickable = WorldManager.Instance.IsTileClickable(this);
