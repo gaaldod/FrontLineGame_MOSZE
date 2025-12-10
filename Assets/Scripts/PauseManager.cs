@@ -28,7 +28,7 @@ public class PauseManager : MonoBehaviour
     void Update()
     {
         // Figyeljük az ESC-et VAGY a 'P' betût a teszteléshez
-        if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P))
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
             Debug.Log("Gomb lenyomva! Pause logika indul"); // Debug üzenet
 
