@@ -958,6 +958,8 @@ MonoBehaviour:
   unitMoveSpeed: 5
   maxTurns: 100
   mapGenerator: {fileID: 439256733}
+  arrowPrefab: {fileID: 0}
+  arrowSpeed: 10
 --- !u!224 &700084737
 RectTransform:
   m_ObjectHideFlags: 0

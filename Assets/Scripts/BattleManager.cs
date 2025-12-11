@@ -16,6 +16,11 @@ public class BattleManager : MonoBehaviour
 
     [Header("Map Reference")]
     public HexMap3D mapGenerator;
+    
+    [Header("Projectile Settings")]
+    [Tooltip("Arrow prefab to spawn when ranged units attack. Leave empty to load from Resources.")]
+    public GameObject arrowPrefab;
+    public float arrowSpeed = 15f;
 
     private Dictionary<Vector2Int, HexTile> hexTileMap = new Dictionary<Vector2Int, HexTile>();
     private Dictionary<Unit, Vector2Int> unitHexPositions = new Dictionary<Unit, Vector2Int>();
@@ -941,6 +946,9 @@ public class BattleManager : MonoBehaviour
         int damage = attacker.attackDamage;
         Debug.Log($"Unit at {unitHexPositions[attacker]} attacks unit at {unitHexPositions[defender]} for {damage} damage");
         
+        // Play attack animation
+        attacker.PlayAttackAnimation();
+        
         defender.TakeDamage(damage);
         
         // If defender died, clean it up
@@ -949,7 +957,7 @@ public class BattleManager : MonoBehaviour
             DestroyUnit(defender);
         }
     }
-
+    
     void AttackCastle(Unit attacker, int owner)
     {
         Debug.Log($"Unit at {unitHexPositions[attacker]} attacks castle!");
