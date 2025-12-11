@@ -19,10 +19,13 @@ public class Unit : MonoBehaviour
     public GameObject unitModelPrefab;
     [Tooltip("Animator Controller for unit animations. Leave empty to use Animator from model prefab.")]
     public RuntimeAnimatorController animatorController;
+    [Tooltip("Attack animation clip (optional, will try to load from FBX if not set).")]
+    public AnimationClip attackAnimationClip;
 
     private UnitHealthBar healthBar;
     private GameObject instantiatedModel;
     private Animator unitAnimator;
+    private Animation legacyAnimation; // For playing animations directly without Animator Controller
     private int unitOwner = -1; // 0 = left, 1 = right, -1 = not determined
     
     // Public method to set the unit owner directly (called by GameManager when placing units)
@@ -53,7 +56,6 @@ public class Unit : MonoBehaviour
         if (unitModelPrefab != null)
         {
             // Debug: Check what we're instantiating
-            Debug.Log($"Unit {gameObject.name}: Instantiating model prefab: {unitModelPrefab.name}");
             
             instantiatedModel = Instantiate(unitModelPrefab, transform);
             instantiatedModel.transform.localPosition = Vector3.zero;
@@ -88,35 +90,31 @@ public class Unit : MonoBehaviour
             if (hit.collider.gameObject.layer == leftLayer)
             {
                 unitOwner = 0; // Left player
-                Debug.Log($"Unit {gameObject.name}: Determined as LEFT player (layer check), position: {transform.position}, hit: {hit.collider.name}");
                 return;
             }
             else if (hit.collider.gameObject.layer == rightLayer)
             {
                 unitOwner = 1; // Right player
-                Debug.Log($"Unit {gameObject.name}: Determined as RIGHT player (layer check), position: {transform.position}, hit: {hit.collider.name}");
                 return;
             }
             else
             {
-                Debug.LogWarning($"Unit {gameObject.name}: Raycast hit something but layer is {hit.collider.gameObject.layer} (LeftZone={leftLayer}, RightZone={rightLayer}), hit: {hit.collider.name}");
             }
         }
         else
         {
-            Debug.LogWarning($"Unit {gameObject.name}: Raycast failed, no hit found. Position: {transform.position}");
         }
-        
-        // Fallback: use position (left side of map = left player)
-        // Assuming map center is around x=0, left is negative or zero, right is positive
-        // Use <= 0 for left to handle x=0 case
-        unitOwner = transform.position.x <= 0 ? 0 : 1;
-        Debug.Log($"Unit {gameObject.name}: Determined as {(unitOwner == 0 ? "LEFT" : "RIGHT")} player (position fallback), position: {transform.position}, x: {transform.position.x}");
     }
     
     void SetupAnimator()
     {
-        if (instantiatedModel == null) return;
+        if (instantiatedModel == null)
+        {
+            Debug.LogWarning($"Unit {gameObject.name}: SetupAnimator called but instantiatedModel is null!");
+            return;
+        }
+        
+        Debug.Log($"Unit {gameObject.name}: Setting up animator for model '{instantiatedModel.name}'");
         
         // Try to find Animator in the instantiated model or its children
         unitAnimator = instantiatedModel.GetComponent<Animator>();
@@ -128,15 +126,47 @@ public class Unit : MonoBehaviour
         // If no Animator found, add one to the model
         if (unitAnimator == null)
         {
+            Debug.Log($"Unit {gameObject.name}: No Animator found, adding one to '{instantiatedModel.name}'");
             unitAnimator = instantiatedModel.AddComponent<Animator>();
         }
-        
-        // Assign Animator Controller if provided
-        if (animatorController != null && unitAnimator != null)
+        else
         {
-            unitAnimator.runtimeAnimatorController = animatorController;
+            Debug.Log($"Unit {gameObject.name}: Found Animator on '{unitAnimator.gameObject.name}'");
         }
-
+        
+        // Set up Animator Controller
+        if (unitAnimator != null)
+        {
+            // If a controller is provided, use it
+            if (animatorController != null)
+            {
+                unitAnimator.runtimeAnimatorController = animatorController;
+                Debug.Log($"Unit {gameObject.name}: Assigned Animator Controller '{animatorController.name}'");
+            }
+            // Otherwise, create a runtime controller using the base controller and attack clip
+            else if (attackAnimationClip != null)
+            {
+                // Load base controller from Resources
+                RuntimeAnimatorController baseController = Resources.Load<RuntimeAnimatorController>("Characters/KnightBaseController");
+                
+                if (baseController != null)
+                {
+                    // Create override controller and assign our attack clip to the "Attack" state
+                    AnimatorOverrideController overrideController = new AnimatorOverrideController(baseController);
+                    overrideController["Attack"] = attackAnimationClip;
+                    unitAnimator.runtimeAnimatorController = overrideController;
+                    Debug.Log($"Unit {gameObject.name}: Created runtime Animator Controller with attack clip '{attackAnimationClip.name}'");
+                }
+                else
+                {
+                    Debug.LogWarning($"Unit {gameObject.name}: KnightBaseController not found in Resources! Will try to play clip directly.");
+                }
+            }
+            else
+            {
+                Debug.Log($"Unit {gameObject.name}: No Animator Controller or attack clip assigned");
+            }
+        }
     }
     
     void SetFacingDirection()
@@ -150,13 +180,11 @@ public class Unit : MonoBehaviour
         {
             // Left player: face right (positive X direction) = 90 degrees
             yRotation = 90f;
-            Debug.Log($"Unit {gameObject.name}: Left player (owner {unitOwner}), setting rotation to {yRotation}");
         }
         else
         {
             // Right player: face left (negative X direction) = 270 degrees (or -90)
             yRotation = 270f;
-            Debug.Log($"Unit {gameObject.name}: Right player (owner {unitOwner}), setting rotation to {yRotation}");
         }
         instantiatedModel.transform.localRotation = Quaternion.Euler(0, yRotation, 0);
     }
@@ -229,13 +257,50 @@ public class Unit : MonoBehaviour
     
     public void PlayAttackAnimation()
     {
+        Debug.Log($"Unit {gameObject.name}: PlayAttackAnimation() called");
+        
+        // Use Animator to play the attack animation
         if (unitAnimator != null)
         {
-            // Try common attack animation parameter names
-            if (HasAnimatorParameter("Attack"))
-                unitAnimator.SetTrigger("Attack");
-            if (HasAnimatorParameter("IsAttacking"))
-                unitAnimator.SetBool("IsAttacking", true);
+            // Diagnostics: log animator/controller/parameters to help debug missing animation
+            var controller = unitAnimator.runtimeAnimatorController;
+            string paramList = controller != null
+                ? string.Join(", ", System.Array.ConvertAll(unitAnimator.parameters, p => $"{p.name}({p.type})"))
+                : "none (no controller)";
+            Debug.Log($"Unit {gameObject.name}: Animator present on '{unitAnimator.gameObject.name}', controller={(controller != null ? controller.name : "null")}, params=[{paramList}]");
+
+            if (unitAnimator.runtimeAnimatorController != null)
+            {
+                // Check if attack animation is already playing - if so, don't restart it
+                AnimatorStateInfo stateInfo = unitAnimator.GetCurrentAnimatorStateInfo(0);
+                if (stateInfo.IsName("Attack") && stateInfo.normalizedTime < 1.0f)
+                {
+                    Debug.Log($"Unit {gameObject.name}: Attack animation already playing (normalized time: {stateInfo.normalizedTime:F2}), skipping restart");
+                    return;
+                }
+                
+                // Use SetTrigger("Attack") to properly trigger the transition from Idle to Attack
+                // This matches the controller setup: Idle → Attack (triggered by "Attack" trigger)
+                if (HasAnimatorParameter("Attack"))
+                {
+                    unitAnimator.SetTrigger("Attack");
+                    Debug.Log($"Unit {gameObject.name}: Set 'Attack' trigger to play attack animation");
+                }
+                else
+                {
+                    // Fallback: try playing directly if trigger doesn't exist
+                    unitAnimator.Play("Attack", 0, 0f);
+                    Debug.Log($"Unit {gameObject.name}: No 'Attack' trigger found, playing 'Attack' state directly");
+                }
+            }
+            else
+            {
+                Debug.LogWarning($"Unit {gameObject.name}: Animator has no controller assigned! Cannot play attack animation.");
+            }
+        }
+        else
+        {
+            Debug.LogWarning($"Unit {gameObject.name}: No Animator component found! Cannot play attack animation.");
         }
     }
 

@@ -127,5 +127,6 @@ MonoBehaviour:
   currentHealth: 5
   attackDamage: 1
   attackRange: 1
-  unitModelPrefab: {fileID: 919132149155446097, guid: 890deb678901d1744a6c41c359718b22, type: 3}
-  animatorController: {fileID: 0}
+  unitModelPrefab: {fileID: 919132149155446097, guid: 9ada135adbea0ee45b66d9bb4fd47dfb, type: 3}
+  animatorController: {fileID: 9100000, guid: 11d9e5a738a495646bcdca6114686a00, type: 2}
+  attackAnimationClip: {fileID: 4781951162920444690, guid: 9ada135adbea0ee45b66d9bb4fd47dfb, type: 3}

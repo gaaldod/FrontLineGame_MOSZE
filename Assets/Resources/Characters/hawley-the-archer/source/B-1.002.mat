@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: A
+  m_Name: B-1.002
   m_Shader: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
@@ -29,11 +29,11 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _BaseMap:
-        m_Texture: {fileID: 2800000, guid: fe4923449b0e3e84f83c41412946eb5d, type: 3}
+        m_Texture: {fileID: 2800000, guid: bcae5e8d287057d4b941c1e7478534c8, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _BumpMap:
-        m_Texture: {fileID: 2800000, guid: 0f69df0934898c64282cdf13e9e9deca, type: 3}
+        m_Texture: {fileID: 2800000, guid: 9c294794859abc146911b6c2531f0e40, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _DetailAlbedoMap:
@@ -53,11 +53,11 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MainTex:
-        m_Texture: {fileID: 2800000, guid: fe4923449b0e3e84f83c41412946eb5d, type: 3}
+        m_Texture: {fileID: 2800000, guid: bcae5e8d287057d4b941c1e7478534c8, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _MetallicGlossMap:
-        m_Texture: {fileID: 2800000, guid: 07ce1ebdf4d132246a40285e61bf1500, type: 3}
+        m_Texture: {fileID: 2800000, guid: c8cf9d0996ebca04eb43f211722dbf20, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _OcclusionMap:
@@ -65,7 +65,7 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _ParallaxMap:
-        m_Texture: {fileID: 2800000, guid: 936e9705794046348bff3cfa2a921c49, type: 3}
+        m_Texture: {fileID: 2800000, guid: f047a033c7cb73a4480f489f76cb3624, type: 3}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _SpecGlossMap:
@@ -102,7 +102,7 @@ Material:
     - _DstBlendAlpha: 0
     - _EnvironmentReflections: 1
     - _GlossMapScale: 1
-    - _Glossiness: 0.14142135
+    - _Glossiness: 0.14142138
     - _GlossyReflections: 1
     - _Metallic: 0
     - _Mode: 0
@@ -110,7 +110,7 @@ Material:
     - _Parallax: 0.02
     - _QueueOffset: 0
     - _ReceiveShadows: 1
-    - _Smoothness: 0.14142135
+    - _Smoothness: 0.14142138
     - _SmoothnessTextureChannel: 0
     - _SpecularHighlights: 1
     - _SrcBlend: 1
@@ -120,13 +120,13 @@ Material:
     - _WorkflowMode: 1
     - _ZWrite: 1
     m_Colors:
-    - _BaseColor: {r: 0.79073066, g: 0.6681186, b: 0.6681186, a: 1}
-    - _Color: {r: 0.79073066, g: 0.6681186, b: 0.6681186, a: 1}
+    - _BaseColor: {r: 0.79073066, g: 0.79073066, b: 0.60921764, a: 1}
+    - _Color: {r: 0.79073066, g: 0.79073066, b: 0.60921764, a: 1}
     - _EmissionColor: {r: 0, g: 0, b: 0, a: 1}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
---- !u!114 &3009643264708400877
+--- !u!114 &4673561219722232363
 MonoBehaviour:
   m_ObjectHideFlags: 11
   m_CorrespondingSourceObject: {fileID: 0}

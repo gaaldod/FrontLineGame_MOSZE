@@ -949,12 +949,6 @@ public class BattleManager : MonoBehaviour
         // Play attack animation
         attacker.PlayAttackAnimation();
         
-        // Spawn projectile for ranged units (attackRange > 1)
-        if (attacker.attackRange > 1)
-        {
-            SpawnProjectile(attacker.transform.position, defender.transform.position);
-        }
-        
         defender.TakeDamage(damage);
         
         // If defender died, clean it up
@@ -964,87 +958,9 @@ public class BattleManager : MonoBehaviour
         }
     }
     
-    void SpawnProjectile(Vector3 startPos, Vector3 targetPos)
-    {
-        GameObject arrowObj = null;
-        
-        // Try to use assigned prefab first
-        if (arrowPrefab != null)
-        {
-            arrowObj = Instantiate(arrowPrefab);
-        }
-        else
-        {
-            // Try to load prefab from Resources
-            GameObject arrowPrefabResource = Resources.Load<GameObject>("Prefabs/Arrow");
-            if (arrowPrefabResource != null)
-            {
-                arrowObj = Instantiate(arrowPrefabResource);
-            }
-            else
-            {
-                // Try to load the FBX model directly from Resources
-                // Note: FBX files need to be set up as models in Unity
-                GameObject arrowModel = Resources.Load<GameObject>("low-poly-arrow-v20/source/Arrow");
-                if (arrowModel == null)
-                {
-                    arrowModel = Resources.Load<GameObject>("Arrow");
-                }
-                
-                if (arrowModel != null)
-                {
-                    arrowObj = Instantiate(arrowModel);
-                }
-                else
-                {
-                    Debug.LogWarning("Could not load arrow model. Creating simple arrow placeholder. " +
-                        "To use the arrow model: In Unity Editor, drag Assets/Resources/low-poly-arrow-v20/source/Arrow.fbx " +
-                        "into the scene, add the Projectile component, then save as a prefab in Assets/Prefabs/Arrow.prefab " +
-                        "and assign it to BattleManager's Arrow Prefab field.");
-                    
-                    // Create a simple placeholder arrow (red capsule pointing forward)
-                    arrowObj = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-                    arrowObj.transform.localScale = new Vector3(0.1f, 0.3f, 0.1f);
-                    arrowObj.name = "Arrow";
-                    
-                    // Make it red so it's visible
-                    Renderer renderer = arrowObj.GetComponent<Renderer>();
-                    if (renderer != null)
-                    {
-                        renderer.material.color = Color.red;
-                    }
-                }
-            }
-        }
-        
-        if (arrowObj != null)
-        {
-            // Add Projectile component if it doesn't have one
-            Projectile projectile = arrowObj.GetComponent<Projectile>();
-            if (projectile == null)
-            {
-                projectile = arrowObj.AddComponent<Projectile>();
-            }
-            
-            projectile.speed = arrowSpeed;
-            projectile.Initialize(startPos, targetPos);
-        }
-    }
-
     void AttackCastle(Unit attacker, int owner)
     {
         Debug.Log($"Unit at {unitHexPositions[attacker]} attacks castle!");
-        
-        // Spawn projectile for ranged units (attackRange > 1)
-        if (attacker.attackRange > 1)
-        {
-            // Find castle position (right side for left player, left side for right player)
-            Vector3 castlePos = (owner == 0) 
-                ? HexCoordToWorld(new Vector2Int(mapWidth - 1, mapHeight - 1))
-                : HexCoordToWorld(new Vector2Int(0, mapHeight - 1));
-            
-            SpawnProjectile(attacker.transform.position, castlePos);
-        }
         
         // Castle destroyed - attacker's team wins
         int winner = owner;
