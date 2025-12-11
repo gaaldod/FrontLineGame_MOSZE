@@ -218,7 +218,19 @@ public class Unit : MonoBehaviour
 
     public void MoveTo(Vector3 position)
     {
-        targetPosition = position;
+        // Raycast down to find the terrain height at the target position
+        // This ensures units stay at the correct height above terrain when moving
+        float terrainHeight = 0f; // Default to base terrain height (y=0)
+        int layerMask = LayerMask.GetMask("LeftZone", "RightZone", "Default");
+        
+        // Raycast from above the target position to find terrain
+        if (Physics.Raycast(position + Vector3.up * 2f, Vector3.down, out RaycastHit hit, 5f, layerMask))
+        {
+            terrainHeight = hit.point.y;
+        }
+        
+        // Set target position with the same offset used when spawning (0.25f above terrain)
+        targetPosition = new Vector3(position.x, terrainHeight + 0.25f, position.z);
         
         // Play walk animation if animator exists
         if (unitAnimator != null)
