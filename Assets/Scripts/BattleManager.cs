@@ -16,6 +16,11 @@ public class BattleManager : MonoBehaviour
 
     [Header("Map Reference")]
     public HexMap3D mapGenerator;
+    
+    [Header("Projectile Settings")]
+    [Tooltip("Arrow prefab to spawn when ranged units attack. Leave empty to load from Resources.")]
+    public GameObject arrowPrefab;
+    public float arrowSpeed = 15f;
 
     private Dictionary<Vector2Int, HexTile> hexTileMap = new Dictionary<Vector2Int, HexTile>();
     private Dictionary<Unit, Vector2Int> unitHexPositions = new Dictionary<Unit, Vector2Int>();
@@ -482,7 +487,143 @@ public class BattleManager : MonoBehaviour
             EndBattle(-1); // Draw
         }
     }
+    
+    HashSet<Vector2Int> GetHexesInRange(Vector2Int startHex, int range)
+    {
+        HashSet<Vector2Int> visited = new HashSet<Vector2Int>();
+        visited.Add(startHex);
 
+        List<Vector2Int> currentStepHexes = new List<Vector2Int>();
+        currentStepHexes.Add(startHex);
+
+        for (int i = 0; i < range; i++)
+        {
+            List<Vector2Int> nextStepHexes = new List<Vector2Int>();
+
+            foreach (Vector2Int hex in currentStepHexes)
+            {
+                // Itt hívjuk meg a TE logikádat
+                List<Vector2Int> neighbors = GetHexNeighbors(hex);
+
+                foreach (Vector2Int neighbor in neighbors)
+                {
+                    if (!visited.Contains(neighbor))
+                    {
+                        visited.Add(neighbor);
+                        nextStepHexes.Add(neighbor);
+                    }
+                }
+            }
+            currentStepHexes = nextStepHexes;
+        }
+
+        return visited;
+    }
+
+    
+    void ProcessUnitTurn(Unit unit)
+    {
+        if (unit == null || !unit.IsAlive())
+            return;
+
+        if (!unitHexPositions.ContainsKey(unit))
+            return;
+
+        // Frissítjük a pozíciót
+        Vector2Int currentHex = WorldToHexCoord(unit.transform.position);
+        unitHexPositions[unit] = currentHex;
+
+        int owner = unitOwners[unit];
+
+        // 1. Célpont keresése (ez maradhat a régi)
+        Vector2Int? targetHex = FindTarget(unit, owner);
+
+        if (!targetHex.HasValue)
+        {
+            Debug.Log($"Unit at {currentHex} has no target");
+            return;
+        }
+
+        // --- JAVÍTOTT TÁMADÁSI LOGIKA ---
+
+        bool isInRange = false;
+        Unit enemyUnitAtTarget = null;
+
+        // HA MELEE (Közelharcos, range 1): A régi, jól bevált módszer
+        if (unit.attackRange <= 1)
+        {
+            List<Vector2Int> neighbors = GetHexNeighbors(currentHex);
+            
+            // 1. Ellenőrizzük a célpont koordinátáját
+            if (neighbors.Contains(targetHex.Value))
+            {
+                isInRange = true;
+            }
+            
+            // 2. Ellenőrizzük, van-e ellenség a szomszédban (a te régi kódod alapján)
+            // Erre azért van szükség, mert a célpont mozoghatott
+            if (!isInRange) 
+            {
+                foreach (Vector2Int neighbor in neighbors)
+                {
+                    Unit enemyUnit = GetUnitAtHex(neighbor);
+                    if (enemyUnit != null && enemyUnit.IsAlive() && unitOwners[enemyUnit] != owner)
+                    {
+                        // Ellenőrizzük, hogy tényleg ott van-e
+                        Vector2Int enemyActualHex = WorldToHexCoord(enemyUnit.transform.position);
+                        if (enemyActualHex == neighbor)
+                        {
+                            enemyUnitAtTarget = enemyUnit; // Megtaláltuk, kit kell ütni
+                            isInRange = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        // HA RANGED (Íjász, range > 1): Az új módszer
+        else
+        {
+            // Lekérjük az összes mezőt X lépés távolságon belül a TE logikáddal
+            HashSet<Vector2Int> hexesInRange = GetHexesInRange(currentHex, unit.attackRange);
+            
+            if (hexesInRange.Contains(targetHex.Value))
+            {
+                isInRange = true;
+                // Megnézzük, van-e ott unit
+                enemyUnitAtTarget = GetUnitAtHex(targetHex.Value);
+            }
+        }
+
+        // --- CSELEKVÉS ---
+
+        if (isInRange)
+        {
+            // Támadás
+            // Ha a régi logikával találtunk specifikus unitot, azt ütjük, 
+            // ha nem, akkor a célpont mezőn lévőt.
+            Unit enemyUnit = enemyUnitAtTarget ?? GetUnitAtHex(targetHex.Value);
+            
+            if (enemyUnit != null && enemyUnit.IsAlive())
+            {
+                AttackUnit(unit, enemyUnit);
+            }
+            else if (enemyUnit == null)
+            {
+                // Ha nincs unit, akkor kastély
+                AttackCastle(unit, owner);
+            }
+            return; // Támadtunk, vége a körnek, NEM lépünk
+        }
+
+        // Mozgás (A*), ha nincs hatótávon belül
+        Vector2Int? nextHex = FindPathToTarget(currentHex, targetHex.Value, owner);
+        if (nextHex.HasValue)
+        {
+            MoveUnit(unit, currentHex, nextHex.Value);
+        }
+    }
+    /*
     void ProcessUnitTurn(Unit unit)
     {
         if (unit == null || !unit.IsAlive())
@@ -552,7 +693,7 @@ public class BattleManager : MonoBehaviour
             MoveUnit(unit, currentHex, nextHex.Value);
         }
     }
-
+    */
     Vector2Int? FindTarget(Unit unit, int owner)
     {
         // Use actual world position, not just hex position dictionary
@@ -805,6 +946,9 @@ public class BattleManager : MonoBehaviour
         int damage = attacker.attackDamage;
         Debug.Log($"Unit at {unitHexPositions[attacker]} attacks unit at {unitHexPositions[defender]} for {damage} damage");
         
+        // Play attack animation
+        attacker.PlayAttackAnimation();
+        
         defender.TakeDamage(damage);
         
         // If defender died, clean it up
@@ -813,7 +957,7 @@ public class BattleManager : MonoBehaviour
             DestroyUnit(defender);
         }
     }
-
+    
     void AttackCastle(Unit attacker, int owner)
     {
         Debug.Log($"Unit at {unitHexPositions[attacker]} attacks castle!");

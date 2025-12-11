@@ -44,6 +44,14 @@ public class WorldManager : MonoBehaviour
     private int pendingBattleHexZ = -999;
     private int pendingBattleWinner = -1;
 
+    // 0 = Attacker (Left), 1 = Defender (Right)
+    public int[] playerWins = new int[2];
+    public bool IsGameOver { get; private set; } = false;
+
+    public int currentRound = 0;
+    public const int MAX_ROUNDS = 10;
+    public const int MAX_DEFENDER_WINS = 7;
+
     void Start()
     {
         if (!goldInitialized)
@@ -76,10 +84,45 @@ public class WorldManager : MonoBehaviour
 
     public void RecordBattleResult(int winner)
     {
+        if (winner >= 0 && winner < playerWins.Length)
+        {
+            playerWins[winner]++;
+            Debug.Log($"Játékos {winner} nyert egy csatát! Állás: Támadó: {playerWins[0]} - Védő: {playerWins[1]}");
+        }
+
         pendingBattleWinner = winner;
         hasPendingBattle = true;
-    }
 
+        if (playerWins[1] >= MAX_DEFENDER_WINS)
+        {
+            Debug.Log("A Védő sikeresen megvédte a várat 7 alkalommal! A Védő NYERT!");
+            IsGameOver = true;
+            StartCoroutine(HandleGameOver(1));
+            return;
+        }
+
+        // 4. Ellenőrzés: Elértük-e a 10. kört?
+        if (currentRound >= MAX_ROUNDS)
+        {
+            Debug.Log("⏳ Letelt a 10 kör! Győztes hirdetése...");
+            int finalWinner;
+
+            if (playerWins[0] > playerWins[1])
+            {
+                // Ha a támadónak több pontja van
+                Debug.Log($"A Támadó nyert több csatát ({playerWins[0]} vs {playerWins[1]}).");
+                finalWinner = 0;
+            }
+            else
+            {
+                // Ha a védőnek több van, VAGY döntetlen (a szabály szerint döntetlennél a védő nyer)
+                Debug.Log($"A Védő nyert (vagy döntetlen) ({playerWins[1]} vs {playerWins[0]}).");
+                finalWinner = 1;
+            }
+            IsGameOver = true;
+            StartCoroutine(HandleGameOver(finalWinner));
+        }
+    }
     public bool IsTileClickable(WorldHexTile tile) => IsClickableTile(tile);
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -161,6 +204,20 @@ public class WorldManager : MonoBehaviour
             }
             catch { /* swallow */ }
 
+            // GYŐZELMEK VISSZATÖLTÉSE
+            if (pending.game_state != null)
+            {
+                IsGameOver = pending.game_state.is_game_over;
+
+                if (pending.game_state.attacker != null)
+                    playerWins[0] = pending.game_state.attacker.wins;
+
+                if (pending.game_state.defender != null)
+                    playerWins[1] = pending.game_state.defender.wins;
+
+                Debug.Log($"Betöltött állás: Támadó: {playerWins[0]}, Védő: {playerWins[1]}, Game Over: {IsGameOver}");
+            }
+
             // apply tile ownership mapping
             try
             {
@@ -223,12 +280,12 @@ public class WorldManager : MonoBehaviour
                 target.ResetColor();
                 tileOwners[(target.hexX, target.hexZ)] = pendingBattleWinner;
 
-                Debug.Log($"✅ Tile ({target.hexX},{target.hexZ}) ownership frissítve: {pendingBattleWinner}");
+                Debug.Log($"Tile ({target.hexX},{target.hexZ}) ownership frissítve: {pendingBattleWinner}");
 
                 // Autosave the world state after applying the battle result
                 try
                 {
-                    bool saved = SaveManager.SaveWorldState();
+                    bool saved = SaveManager.SaveWorldState(currentRound, MAX_ROUNDS);
                     if (saved) Debug.Log("SaveManager: autosave created after applying battle result.");
                     else Debug.LogWarning("SaveManager: autosave reported failure.");
                 }
@@ -241,7 +298,8 @@ public class WorldManager : MonoBehaviour
                 if (target.isCastleTile && pendingBattleWinner == 0)
                 {
                     Debug.Log("🏁 Game Over! A bal játékos elfoglalta a kastélyt és megnyerte a játékot!");
-                    StartCoroutine(HandleGameOver());
+                    IsGameOver = true;
+                    StartCoroutine(HandleGameOver(0));
                     yield break;
                 }
             }
@@ -254,15 +312,19 @@ public class WorldManager : MonoBehaviour
         pendingBattleWinner = -1;
     }
 
-    private IEnumerator HandleGameOver()
+    private IEnumerator HandleGameOver(int winner)
     {
+        string winnerName = (winner == 0) ? "TÁMADÓ (Bal)" : "VÉDŐ (Jobb)";
+        Debug.Log($"🏁 A JÁTÉK VÉGET ÉRT! Győztes: {winnerName}");
+
         yield return new WaitForSeconds(2f);
 
         // minden adat törlése
         tileOwners.Clear();
         goldInitialized = false;
         hasPendingBattle = false;
-
+        playerWins = new int[2];
+        IsGameOver = false;
         // WorldManager leiratkozik és megsemmisül
         SceneManager.sceneLoaded -= OnSceneLoaded;
         Instance = null;
@@ -282,8 +344,8 @@ public class WorldManager : MonoBehaviour
 
     public void UpdateGoldUI()
     {
-        if (leftGoldText != null) leftGoldText.text = $"Arany: {gold[0]}";
-        if (rightGoldText != null) rightGoldText.text = $"Arany: {gold[1]}";
+        if (leftGoldText != null) leftGoldText.text = $"{gold[0]}";
+        if (rightGoldText != null) rightGoldText.text = $"{gold[1]}";
     }
 
     private void OnDestroy()
