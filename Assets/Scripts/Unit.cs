@@ -220,7 +220,7 @@ public class Unit : MonoBehaviour
     {
         // Raycast down to find the terrain height at the target position
         // This ensures units stay at the correct height above terrain when moving
-        float terrainHeight = position.y;
+        float terrainHeight = 0f; // Default to base terrain height (y=0)
         int layerMask = LayerMask.GetMask("LeftZone", "RightZone", "Default");
         
         // Raycast from above the target position to find terrain
