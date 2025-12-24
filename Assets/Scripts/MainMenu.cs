@@ -73,10 +73,6 @@ public class MainMenu : MonoBehaviour
 
         bool saveFilesExist = DoSaveFilesExist();
         bool introSeen = PlayerPrefs.HasKey(IntroSeenKey);
-        
-        // TEMPORARY: Clear intro seen flag for testing (remove this line once intro works correctly)
-        PlayerPrefs.DeleteKey(IntroSeenKey);
-        introSeen = false;
 
         // Show intro only if there are no save files AND the intro has not been shown before
         if (!saveFilesExist && !introSeen)
