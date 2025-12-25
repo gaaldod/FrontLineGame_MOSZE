@@ -66,7 +66,7 @@ A projekt a standard Unity konvenciókat követi, logikailag elkülönített map
 A játék három fő fázisból áll:
 1.  **World Map:** A térképen kattintson egy ellenséges területre (piros szegély), amelyet meg szeretne támadni.
 2.  **Felkészülés:** A csata nézetben vásároljon egységeket a rendelkezésre álló pontokból a "Vásárlás" gombokkal.
-3.  **Harc:** Nyomja meg a **"Start Battle"** gombot. Innentől a szimuláció automatikus.
+3.  **Harc:** Nyomja meg a **"Harcra Fel!"** gombot. Innentől a szimuláció automatikus.
 
 ### ⌨️ Irányítás és Debug Funkciók
 A tesztelés megkönnyítése érdekében az alábbi gyorsbillentyűk érhetők el:
