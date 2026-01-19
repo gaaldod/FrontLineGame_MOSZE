@@ -14,6 +14,7 @@ public class MainMenu : MonoBehaviour
     public GameObject settingsPanel;
     public GameObject introScenePanel;
     public GameObject saveBrowser;
+    public GameObject BackGround;
 
     [Header("Save-related Buttons")]
     public Button continueButton;
@@ -50,6 +51,12 @@ public class MainMenu : MonoBehaviour
     void Start()
     {
         Debug.Log($"MainMenu.Start() called. gameObject={gameObject.name}, active={gameObject.activeInHierarchy}, enabled={enabled}");
+        // CRITICAL: Ensure this GameObject stays active so Update() can run and detect key presses
+        if (!gameObject.activeInHierarchy)
+        {
+            gameObject.SetActive(true);
+        }
+        
         // Ensure only main menu is visible at startup
         ShowMainMenu();
 
@@ -112,6 +119,13 @@ public class MainMenu : MonoBehaviour
     
     void Update()
     {
+        // Ensure GameObject stays active - critical for key detection
+        if (!gameObject.activeInHierarchy)
+        {
+            gameObject.SetActive(true);
+            return; // Skip this frame, will check next frame
+        }
+        
         // Try to find introScenePanel if it's not assigned
         if (introScenePanel == null)
         {
@@ -281,7 +295,6 @@ public class MainMenu : MonoBehaviour
     {
             if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
             if (settingsPanel != null) settingsPanel.SetActive(false);
-            if (settingsPanel != null) settingsPanel.SetActive(false);
             if (saveBrowser != null) saveBrowser.SetActive(true);
     }
 
@@ -348,11 +361,27 @@ public class MainMenu : MonoBehaviour
             Canvas parentCanvas = mainMenuPanel.GetComponentInParent<Canvas>();
             if (parentCanvas != null)
             {
-                parentCanvas.gameObject.SetActive(true);
-                parentCanvas.enabled = true; // Also explicitly enable the Canvas component
-                // Set sort order to ensure it renders on top
-                parentCanvas.sortingOrder = 10;
-                Debug.Log($"ShowMainMenu() - Enabled parent Canvas: {parentCanvas.gameObject.name}, Canvas enabled: {parentCanvas.enabled}, SortOrder: {parentCanvas.sortingOrder}");
+                // Check if Canvas is on the same GameObject as this script
+                if (parentCanvas.gameObject == gameObject)
+                {
+                    // This is the MainMenu GameObject - ensure it's active and Canvas is enabled
+                    if (!gameObject.activeInHierarchy)
+                    {
+                        gameObject.SetActive(true);
+                    }
+                    parentCanvas.enabled = true; // Re-enable Canvas component
+                    parentCanvas.sortingOrder = 10;
+                    Debug.Log($"ShowMainMenu() - Re-enabled Canvas component on MainMenu GameObject: Canvas enabled: {parentCanvas.enabled}, SortOrder: {parentCanvas.sortingOrder}");
+                }
+                else
+                {
+                    // Different GameObject - safe to activate the whole thing
+                    parentCanvas.gameObject.SetActive(true);
+                    parentCanvas.enabled = true; // Also explicitly enable the Canvas component
+                    // Set sort order to ensure it renders on top
+                    parentCanvas.sortingOrder = 10;
+                    Debug.Log($"ShowMainMenu() - Enabled parent Canvas: {parentCanvas.gameObject.name}, Canvas enabled: {parentCanvas.enabled}, SortOrder: {parentCanvas.sortingOrder}");
+                }
             }
             else
             {
@@ -413,10 +442,38 @@ public class MainMenu : MonoBehaviour
         PlayerPrefs.SetInt(IntroSeenKey, 1);
         PlayerPrefs.Save();
 
-        if (mainMenuPanel != null) mainMenuPanel.SetActive(false);
-        if (settingsPanel != null) settingsPanel.SetActive(false);
-        if (saveBrowser != null) saveBrowser.SetActive(false);
-        if (saveBrowser != null) saveBrowser.SetActive(false);
+        if (mainMenuPanel != null)
+        {
+            // mainMenuPanel IS the GameObject with this script (MainMenu)
+            // We cannot disable it or the script will stop running!
+            // Instead, disable only its child UI elements (buttons, etc.)
+            
+            // Disable all child UI elements (buttons, text, etc.) but keep MainMenu GameObject active
+            foreach (Transform child in mainMenuPanel.transform)
+            {
+                child.gameObject.SetActive(false);
+            }
+            
+            // CRITICAL: Never disable MenuUI (parent Canvas GameObject) or MainMenu (this GameObject)
+            // Get the parent Canvas to ensure we don't disable it
+            Canvas menuUICanvas = mainMenuPanel.GetComponentInParent<Canvas>();
+            if (menuUICanvas != null && menuUICanvas.gameObject != mainMenuPanel)
+            {
+                // This is MenuUI - ensure it stays active!
+                if (!menuUICanvas.gameObject.activeInHierarchy)
+                {
+                    menuUICanvas.gameObject.SetActive(true);
+                }
+            }
+        }
+        if (settingsPanel != null)
+        {
+            settingsPanel.SetActive(false);
+        }
+        if (saveBrowser != null)
+        {
+            saveBrowser.SetActive(false);
+        }
 
         if (introScenePanel == null)
         {
@@ -437,10 +494,43 @@ public class MainMenu : MonoBehaviour
             }
         }
         
+        // Enable Canvas FIRST before activating the panel
+        Canvas introCanvas = introScenePanel.GetComponent<Canvas>();
+        if (introCanvas != null)
+        {
+            introCanvas.enabled = true; // Enable Canvas BEFORE activating GameObject
+        }
+        
+        Canvas parentCanvas = introScenePanel.GetComponentInParent<Canvas>();
+        if (parentCanvas != null && parentCanvas.gameObject != introScenePanel)
+        {
+            parentCanvas.gameObject.SetActive(true);
+            parentCanvas.enabled = true;
+        }
+        
+        // Now activate the panel
         introScenePanel.SetActive(true);
+        
+        // Verify Canvas is still enabled after activation
+        if (introCanvas != null)
+        {
+            if (!introCanvas.enabled)
+            {
+                introCanvas.enabled = true;
+            }
+        }
+        
+        // CRITICAL: Ensure this GameObject stays active so Update() can run and detect key presses
+        if (!gameObject.activeInHierarchy)
+        {
+            gameObject.SetActive(true);
+        }
         
         isShowingIntro = true;
         skipInProgress = false;
+        
+        // Disable background_gray when intro starts
+        SetBackgroundGrayActive(false);
 
         playableDirector = null;
 
@@ -518,6 +608,37 @@ public class MainMenu : MonoBehaviour
     {
     }
 
+    private GameObject FindBackgroundGray()
+    {
+        // Try using the BackGround field if assigned
+        if (BackGround != null)
+        {
+            return BackGround;
+        }
+        
+        // Try to find by name
+        GameObject bg = GameObject.Find("background_gray");
+        if (bg == null)
+        {
+            bg = GameObject.Find("Background_gray");
+        }
+        if (bg == null)
+        {
+            bg = GameObject.Find("BackgroundGray");
+        }
+        
+        return bg;
+    }
+
+    private void SetBackgroundGrayActive(bool active)
+    {
+        GameObject bg = FindBackgroundGray();
+        if (bg != null)
+        {
+            bg.SetActive(active);
+        }
+    }
+
     private void SkipIntro()
     {
         isShowingIntro = false;
@@ -546,6 +667,9 @@ public class MainMenu : MonoBehaviour
             }
         }
         
+        // Re-enable background_gray when skipping intro
+        SetBackgroundGrayActive(true);
+        
         ShowMainMenu();
         CheckForSaveFiles();
     }
@@ -565,29 +689,52 @@ public class MainMenu : MonoBehaviour
             }
         }
         
-        bool completedNormally = maxTimeReached >= pd.duration - 0.1f || maxTimeReached >= 5.0;
-        
-        if (completedNormally)
+        // CRITICAL: Ensure GameObject is active so Update() can run and detect keys
+        if (!gameObject.activeInHierarchy)
         {
-            HideIntroAndShowMainMenu();
+            gameObject.SetActive(true);
+        }
+        
+        // Check for skip key press immediately when timeline stops (in case Update() hasn't run yet)
+        if ((isShowingIntro || (introScenePanel != null && introScenePanel.activeInHierarchy)) && !skipInProgress)
+        {
+            if (Input.GetKeyDown(skipKey))
+            {
+                skipInProgress = true;
+                SkipIntro();
+                return; // Exit early, skip handled
+            }
+        }
+        
+        bool completedNormally = pd != null && (maxTimeReached >= pd.duration - 0.1f || maxTimeReached >= 5.0);
+        
+        // Always delay hiding to give Update() a chance to detect skip key presses
+        // This is especially important if the timeline stops immediately
+        if (gameObject.activeInHierarchy)
+        {
+            StartCoroutine(DelayedHideIntro());
         }
         else
         {
-            if (gameObject.activeInHierarchy)
-            {
-                StartCoroutine(DelayedHideIntro());
-            }
-            else
-            {
-                HideIntroAndShowMainMenu();
-            }
+            // Force GameObject active - this is critical for Update() to run
+            gameObject.SetActive(true);
+            StartCoroutine(DelayedHideIntro());
         }
     }
     
     private IEnumerator DelayedHideIntro()
     {
-        yield return null;
-        yield return null;
+        // Wait several frames to give Update() multiple chances to detect key presses
+        // This is especially important if the timeline stops immediately
+        for (int i = 0; i < 5; i++)
+        {
+            yield return null; // Wait one frame
+            // Check if skip was pressed during the delay
+            if (skipInProgress)
+            {
+                yield break; // Exit coroutine, skip already handled
+            }
+        }
         
         if (!skipInProgress && isShowingIntro)
         {
@@ -615,6 +762,9 @@ public class MainMenu : MonoBehaviour
                 parentCanvas.gameObject.SetActive(false);
             }
         }
+        
+        // Re-enable background_gray when intro ends
+        SetBackgroundGrayActive(true);
         
         ShowMainMenu();
         CheckForSaveFiles();
