@@ -6,14 +6,14 @@ using TMPro;
 
 public class SaveBrowser : MonoBehaviour
 {
-    [Header("UI Referenciák (Húzd be õket!)")]
+    [Header("UI Referenciï¿½k (Hï¿½zd be ï¿½ket!)")]
     public RectTransform contentContainer; // A Scroll View -> Content objektuma
-    public GameObject saveItemPrefab;  // A Gomb prefab, amit a Projectbõl húzol be
+    public GameObject saveItemPrefab;  // A Gomb prefab, amit a Projectbï¿½l hï¿½zol be
     public ScrollRect scrollView;
 
-    [Header("Funkció Gombok (Húzd be a Panelrõl!)")]
-    public Button openFolderButton;    // A mappa megnyitása gomb
-    public Button refreshButton;       // A frissítés gomb
+    [Header("Funkciï¿½ Gombok (Hï¿½zd be a Panelrï¿½l!)")]
+    public Button openFolderButton;    // A mappa megnyitï¿½sa gomb
+    public Button refreshButton;       // A frissï¿½tï¿½s gomb
 
     private void OnEnable()
     {
@@ -24,7 +24,7 @@ public class SaveBrowser : MonoBehaviour
         gameObject.SetActive(true);
     }
 
-    // Ezt hívja a Close gomb
+    // Ezt hï¿½vja a Close gomb
     public void Close()
     {
         gameObject.SetActive(false);
@@ -32,7 +32,7 @@ public class SaveBrowser : MonoBehaviour
 
     void Start()
     {
-        // Bekötjük a gombokat automatikusan, ha be vannak húzva az Inspectorban
+        // Bekï¿½tjï¿½k a gombokat automatikusan, ha be vannak hï¿½zva az Inspectorban
         if (openFolderButton != null)
             openFolderButton.onClick.AddListener(OpenFolder);
 
@@ -40,48 +40,48 @@ public class SaveBrowser : MonoBehaviour
             refreshButton.onClick.AddListener(Refresh);
     }
 
-    // A mappa megnyitása
+    // A mappa megnyitï¿½sa
     void OpenFolder()
     {
         SaveManager.OpenSavesFolder();
     }
 
-    // A lista frissítése (ez a lényeg)
+    // A lista frissï¿½tï¿½se (ez a lï¿½nyeg)
     public void Refresh()
     {
-        // 1. Töröljük a régi listát (hogy ne duplázódjon)
+        // 1. Tï¿½rï¿½ljï¿½k a rï¿½gi listï¿½t (hogy ne duplï¿½zï¿½djon)
         foreach (Transform child in contentContainer)
         {
             Destroy(child.gameObject);
         }
 
-        // 2. Lekérjük a fájlokat a SaveManager-tõl
+        // 2. Lekï¿½rjï¿½k a fï¿½jlokat a SaveManager-tï¿½l
         string[] files = SaveManager.GetSaveFiles();
 
         if (files == null || files.Length == 0)
         {
-            Debug.Log("Nincsenek mentések.");
+            Debug.Log("Nincsenek mentï¿½sek.");
             return;
         }
 
-        // 3. Legyártjuk a gombokat a Prefab alapján
+        // 3. Legyï¿½rtjuk a gombokat a Prefab alapjï¿½n
         foreach (string path in files)
         {
-            // Létrehozunk egy új gombot a Content alatt
+            // Lï¿½trehozunk egy ï¿½j gombot a Content alatt
             GameObject newButton = Instantiate(saveItemPrefab, contentContainer);
 
-            // Adatok lekérése
+            // Adatok lekï¿½rï¿½se
             var fi = new FileInfo(path);
 
-            // Szöveg beállítása (Feltételezzük, hogy van Text komponens a gombon)
+            // Szï¿½veg beï¿½llï¿½tï¿½sa (Feltï¿½telezzï¿½k, hogy van Text komponens a gombon)
             TMP_Text btnText = newButton.GetComponentInChildren<TMP_Text>();
             if (btnText != null)
             {
-                // Formátum: Fájlnév (sortörés) Dátum
+                // Formï¿½tum: Fï¿½jlnï¿½v (sortï¿½rï¿½s) Dï¿½tum
                 btnText.text = $"{fi.Name}</size>";
             }
 
-            // Kattintás esemény bekötése (Betöltés)
+            // Kattintï¿½s esemï¿½ny bekï¿½tï¿½se (Betï¿½ltï¿½s)
             string capturedPath = path; // Fontos a lambda miatt
             newButton.GetComponent<Button>().onClick.AddListener(() => LoadSave(capturedPath));
         }
@@ -91,8 +91,8 @@ public class SaveBrowser : MonoBehaviour
     {
         if (scrollView != null)
         {
-            // Ez a parancs kényszeríti a Unity-t, hogy AZONNAL számolja ki a lista új magasságát
-            // Ha ez nincs itt, a görgetés "régi" adatokkal dolgozna és pontatlan lenne.
+            // Ez a parancs kï¿½nyszerï¿½ti a Unity-t, hogy AZONNAL szï¿½molja ki a lista ï¿½j magassï¿½gï¿½t
+            // Ha ez nincs itt, a gï¿½rgetï¿½s "rï¿½gi" adatokkal dolgozna ï¿½s pontatlan lenne.
             Canvas.ForceUpdateCanvases();
 
             // 1 = Teteje, 0 = Alja
@@ -102,18 +102,20 @@ public class SaveBrowser : MonoBehaviour
 
     void LoadSave(string path)
     {
-        Debug.Log($"Betöltés indítása: {path}");
+        Debug.Log($"Betï¿½ltï¿½s indï¿½tï¿½sa: {path}");
         bool success = SaveManager.LoadFromPath(path);
 
         if (success)
         {
-            // Ha sikerült, betöltjük a játékot
+            // We are entering gameplay from the menu in this runtime; don't replay intro when returning to menu.
+            MainMenu.SkipIntroForRestOfRuntime();
+            // Ha sikerï¿½lt, betï¿½ltjï¿½k a jï¿½tï¿½kot
             SceneManager.LoadScene("WorldMapScene");
         }
         else
         {
-            Debug.LogWarning("Sikertelen betöltés (vagy Game Over-es mentés).");
-            // Itt esetleg kiírhatnál egy hibaüzenetet a képernyõre
+            Debug.LogWarning("Sikertelen betï¿½ltï¿½s (vagy Game Over-es mentï¿½s).");
+            // Itt esetleg kiï¿½rhatnï¿½l egy hibaï¿½zenetet a kï¿½pernyï¿½re
         }
     }
 }

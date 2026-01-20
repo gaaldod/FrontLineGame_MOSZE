@@ -34,6 +34,14 @@ public class MainMenu : MonoBehaviour
     // PlayerPrefs key used to remember that the intro has already been shown
     private const string IntroSeenKey = "FrontlineGame_IntroSeen_v1";
 
+    // Runtime-only flag: if true, never show intro again until the app restarts (survives scene reloads)
+    private static bool s_skipIntroForRestOfRuntime = false;
+
+    public static void SkipIntroForRestOfRuntime()
+    {
+        s_skipIntroForRestOfRuntime = true;
+    }
+
     // References for stopping playback reliably
     private PlayableDirector playableDirector;
     private bool introStarted = false;
@@ -77,6 +85,20 @@ public class MainMenu : MonoBehaviour
 
         // Initialize save system first so we can decide whether to show the intro
         InitializeSaveSystem();
+
+        // If we already entered gameplay in this runtime (or intro already ran), never replay intro.
+        if (s_skipIntroForRestOfRuntime)
+        {
+            if (introScenePanel != null)
+            {
+                introScenePanel.SetActive(false);
+                Canvas introCanvas = introScenePanel.GetComponent<Canvas>();
+                if (introCanvas != null) introCanvas.enabled = false;
+            }
+            ShowMainMenu();
+            CheckForSaveFiles();
+            return;
+        }
 
         bool saveFilesExist = DoSaveFilesExist();
         bool introSeen = PlayerPrefs.HasKey(IntroSeenKey);
@@ -269,6 +291,9 @@ public class MainMenu : MonoBehaviour
     // Your existing methods remain the same
     public void PlayGame()
     {
+        // From now on, never replay the intro in this app runtime (even if we return to menu)
+        s_skipIntroForRestOfRuntime = true;
+
         // Create an initial save (will create the folder if missing).
         // Use sensible initial values; adjust round/maxRounds as needed.
         bool ok = SaveManager.SaveWorldState(round: 0, maxRounds: 10);
@@ -281,6 +306,9 @@ public class MainMenu : MonoBehaviour
     // Called when Continue button is pressed
     void ContinueGame()
     {
+        // From now on, never replay the intro in this app runtime (even if we return to menu)
+        s_skipIntroForRestOfRuntime = true;
+
         bool loaded = SaveManager.LoadLatestSave();
         if (!loaded)
         {
@@ -438,6 +466,9 @@ public class MainMenu : MonoBehaviour
     private void StartIntro()
     {
         maxTimeReached = 0.0;
+
+        // Once intro starts, don't allow it to replay again during this runtime (e.g., after returning from gameplay)
+        s_skipIntroForRestOfRuntime = true;
 
         PlayerPrefs.SetInt(IntroSeenKey, 1);
         PlayerPrefs.Save();
@@ -642,6 +673,9 @@ public class MainMenu : MonoBehaviour
     private void SkipIntro()
     {
         isShowingIntro = false;
+
+        // Once skipped, keep it skipped for the rest of this runtime.
+        s_skipIntroForRestOfRuntime = true;
         
         if (playableDirector != null)
         {
@@ -745,6 +779,9 @@ public class MainMenu : MonoBehaviour
     private void HideIntroAndShowMainMenu()
     {
         isShowingIntro = false;
+
+        // Once completed, keep it skipped for the rest of this runtime.
+        s_skipIntroForRestOfRuntime = true;
         
         if (introScenePanel != null)
         {
